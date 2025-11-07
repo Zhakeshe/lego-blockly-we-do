@@ -5,19 +5,23 @@ import { TelemetryPanel } from "@/components/TelemetryPanel";
 import { ConsoleLog } from "@/components/ConsoleLog";
 import { useWeDo } from "@/hooks/useWeDo";
 import { Cpu } from "lucide-react";
-
 const Index = () => {
   const wedo = useWeDo();
-  const [logs, setLogs] = useState<Array<{ timestamp: Date; message: string; type: "info" | "error" | "success" | "command" }>>([]);
-
+  const [logs, setLogs] = useState<Array<{
+    timestamp: Date;
+    message: string;
+    type: "info" | "error" | "success" | "command";
+  }>>([]);
   useEffect(() => {
     wedo.setLogCallback((message: string, type: "info" | "error" | "success" | "command") => {
-      setLogs((prev) => [...prev, { timestamp: new Date(), message, type }]);
+      setLogs(prev => [...prev, {
+        timestamp: new Date(),
+        message,
+        type
+      }]);
     });
   }, [wedo]);
-
-  return (
-    <div className="relative min-h-screen bg-bg">
+  return <div className="relative min-h-screen bg-bg">
       <div className="site-content relative z-10">
         {/* Header */}
         <header className="border-b border-border1 bg-surface1/80 backdrop-blur-sm sticky top-0 z-20">
@@ -28,18 +32,12 @@ const Index = () => {
                   <Cpu className="w-6 h-6 text-bg" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-text1">LEGO WeDo 2.0</h1>
+                  <h1 className="text-xl font-semibold text-text1">S7 Robotics</h1>
                   <p className="text-xs font-mono text-text4">Visual Programming Platform</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${
-                  wedo.status === "Connected" 
-                    ? "bg-success/10 border-success/30 text-success" 
-                    : wedo.status === "Connecting"
-                    ? "bg-warning/10 border-warning/30 text-warning animate-pulse-glow"
-                    : "bg-border2 border-border1 text-text4"
-                }`}>
+                <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${wedo.status === "Connected" ? "bg-success/10 border-success/30 text-success" : wedo.status === "Connecting" ? "bg-warning/10 border-warning/30 text-warning animate-pulse-glow" : "bg-border2 border-border1 text-text4"}`}>
                   {wedo.status}
                 </span>
               </div>
@@ -64,8 +62,6 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

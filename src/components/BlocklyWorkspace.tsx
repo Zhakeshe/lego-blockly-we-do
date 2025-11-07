@@ -17,7 +17,22 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const stopRequestedRef = useRef(false);
 
   useEffect(() => {
-    if (!blocklyDiv.current || !Blockly) return;
+    if (!blocklyDiv.current) return;
+    
+    // Wait for Blockly to load
+    if (typeof window !== 'undefined' && !(window as any).Blockly) {
+      console.log("Waiting for Blockly to load...");
+      const checkBlockly = setInterval(() => {
+        if ((window as any).Blockly) {
+          clearInterval(checkBlockly);
+          window.location.reload();
+        }
+      }, 100);
+      return () => clearInterval(checkBlockly);
+    }
+    
+    const Blockly = (window as any).Blockly;
+    if (!Blockly) return;
 
     // Define custom blocks
     Blockly.Blocks["wedo_motor_run"] = {
@@ -285,6 +300,12 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     }
 
     if (!workspaceRef.current) return;
+
+    const Blockly = (window as any).Blockly;
+    if (!Blockly) {
+      toast.error("Blockly not loaded");
+      return;
+    }
 
     try {
       setIsRunning(true);

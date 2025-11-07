@@ -294,16 +294,19 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   }, []);
 
   const runCode = async () => {
-    if (wedo.status !== "Connected") {
-      toast.error("Please connect to WeDo device first");
-      return;
-    }
-
     if (!workspaceRef.current) return;
 
     const Blockly = (window as any).Blockly;
     if (!Blockly) {
       toast.error("Blockly not loaded");
+      return;
+    }
+
+    if (wedo.status !== "Connected") {
+      toast.error("Please connect to WeDo device before running the program", {
+        description: "Click 'Connect WeDo' button in the control panel",
+        duration: 4000,
+      });
       return;
     }
 
@@ -350,7 +353,6 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
           {!isRunning ? (
             <Button
               onClick={runCode}
-              disabled={wedo.status !== "Connected"}
               className="bg-success hover:bg-success/80 text-white"
             >
               <Play className="w-4 h-4 mr-2" />
@@ -366,9 +368,9 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       </div>
 
       {wedo.status !== "Connected" && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 bg-info/10 border border-info/30 rounded-lg text-info text-sm">
           <AlertCircle className="w-4 h-4" />
-          <span>Connect to WeDo device to run programs</span>
+          <span>You can create your program now. Connect WeDo to run it.</span>
         </div>
       )}
 

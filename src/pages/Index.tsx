@@ -5,6 +5,7 @@ import { TelemetryPanel } from "@/components/TelemetryPanel";
 import { ConsoleLog } from "@/components/ConsoleLog";
 import { NavigationMenu } from "@/components/NavigationMenu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useWeDo } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Cpu } from "lucide-react";
@@ -42,7 +43,10 @@ const Index = () => {
               </div>
               <div className="flex items-center gap-4">
                 <NavigationMenu />
-                <LanguageSwitcher />
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <LanguageSwitcher />
+                </div>
                 <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${wedo.status === "Connected" ? "bg-success/10 border-success/30 text-success" : wedo.status === "Connecting" ? "bg-warning/10 border-warning/30 text-warning animate-pulse-glow" : "bg-border2 border-border1 text-text4"}`}>
                   {t(`status.${wedo.status.toLowerCase()}`)}
                 </span>

@@ -236,41 +236,77 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       return `await new Promise(resolve => setTimeout(resolve, ${ms}));\n`;
     };
 
-    // Initialize workspace
+    // Initialize workspace with proper toolbox configuration
+    const toolbox = {
+      kind: "categoryToolbox",
+      contents: [
+        {
+          kind: "category",
+          name: "WeDo Моторлар / Motors",
+          colour: "230",
+          contents: [
+            { kind: "block", type: "wedo_motor_run" },
+            { kind: "block", type: "wedo_motor_reverse" },
+            { kind: "block", type: "wedo_motor_stop_brake" },
+            { kind: "block", type: "wedo_motor_stop_coast" },
+            { kind: "block", type: "wedo_motor_toggle" },
+            { kind: "block", type: "wedo_motor_for_seconds" },
+          ],
+        },
+        {
+          kind: "category",
+          name: "WeDo Сенсорлар / Sensors",
+          colour: "160",
+          contents: [
+            { kind: "block", type: "wedo_sensor_motion" },
+            { kind: "block", type: "wedo_sensor_tilt" },
+            { kind: "block", type: "wedo_sensor_light" },
+            { kind: "block", type: "wedo_sensor_button" },
+          ],
+        },
+        {
+          kind: "category",
+          name: "WeDo Hub",
+          colour: "20",
+          contents: [
+            { kind: "block", type: "wedo_led_color" },
+            { kind: "block", type: "wedo_wait" },
+          ],
+        },
+        {
+          kind: "category",
+          name: "Басқару / Control",
+          colour: "120",
+          contents: [
+            { kind: "block", type: "controls_if" },
+            { kind: "block", type: "controls_repeat_ext" },
+            { kind: "block", type: "controls_whileUntil" },
+            { kind: "block", type: "logic_compare" },
+            { kind: "block", type: "logic_operation" },
+            { kind: "block", type: "logic_negate" },
+          ],
+        },
+        {
+          kind: "category",
+          name: "Математика / Math",
+          colour: "210",
+          contents: [
+            { kind: "block", type: "math_number" },
+            { kind: "block", type: "math_arithmetic" },
+            { kind: "block", type: "math_single" },
+          ],
+        },
+        {
+          kind: "category",
+          name: "Айнымалылар / Variables",
+          colour: "330",
+          custom: "VARIABLE",
+        },
+      ],
+    };
+
     const workspace = Blockly.inject(blocklyDiv.current, {
-      toolbox: `
-        <xml>
-          <category name="WeDo Motors" colour="230">
-            <block type="wedo_motor_run"></block>
-            <block type="wedo_motor_reverse"></block>
-            <block type="wedo_motor_stop_brake"></block>
-            <block type="wedo_motor_stop_coast"></block>
-            <block type="wedo_motor_toggle"></block>
-            <block type="wedo_motor_for_seconds"></block>
-          </category>
-          <category name="WeDo Sensors" colour="160">
-            <block type="wedo_sensor_motion"></block>
-            <block type="wedo_sensor_tilt"></block>
-            <block type="wedo_sensor_light"></block>
-            <block type="wedo_sensor_button"></block>
-          </category>
-          <category name="WeDo Hub" colour="20">
-            <block type="wedo_led_color"></block>
-            <block type="wedo_wait"></block>
-          </category>
-          <category name="Control" colour="120">
-            <block type="controls_if"></block>
-            <block type="controls_repeat_ext"></block>
-            <block type="controls_whileUntil"></block>
-          </category>
-          <category name="Math" colour="210">
-            <block type="math_number"></block>
-            <block type="math_arithmetic"></block>
-            <block type="logic_compare"></block>
-          </category>
-          <category name="Variables" colour="330" custom="VARIABLE"></category>
-        </xml>
-      `,
+      toolbox: toolbox,
       grid: {
         spacing: 20,
         length: 3,
@@ -286,6 +322,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         scaleSpeed: 1.2,
       },
       trashcan: true,
+      theme: Blockly.Themes.Dark,
     });
 
     workspaceRef.current = workspace;

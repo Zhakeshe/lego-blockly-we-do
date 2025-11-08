@@ -59,10 +59,6 @@ export const useWeDo = (): WeDoHook => {
   const isReconnectingRef = useRef(false);
   const motorDirectionRef = useRef<number>(1); // 1 = forward, -1 = reverse
 
-  const device = await navigator.bluetooth.requestDevice({
-  acceptAllDevices: true,
-  optionalServices: ['00001523-1212-efde-1523-785feabcd123']
-  });
 
 
   const log = useCallback((message: string, type: "info" | "error" | "success" | "command" = "info") => {
@@ -144,6 +140,8 @@ export const useWeDo = (): WeDoHook => {
       const device = await (navigator as any).bluetooth.requestDevice({
         filters: [{ namePrefix: "LPF2" }],
         optionalServices: [WEDO_SERVICE_UUID],
+        acceptAllDevices: true, 
+        optionalServices: ['00001523-1212-efde-1523-785feabcd123'] 
       });
 
       deviceRef.current = device;

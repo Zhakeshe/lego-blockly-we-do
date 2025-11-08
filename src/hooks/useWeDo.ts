@@ -59,6 +59,12 @@ export const useWeDo = (): WeDoHook => {
   const isReconnectingRef = useRef(false);
   const motorDirectionRef = useRef<number>(1); // 1 = forward, -1 = reverse
 
+  const device = await navigator.bluetooth.requestDevice({
+  acceptAllDevices: true,
+  optionalServices: ['00001523-1212-efde-1523-785feabcd123']
+  });
+
+
   const log = useCallback((message: string, type: "info" | "error" | "success" | "command" = "info") => {
     console.log(`[${type.toUpperCase()}] ${message}`);
     logCallbackRef.current?.(message, type);

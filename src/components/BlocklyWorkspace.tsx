@@ -40,131 +40,195 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     Blockly.Blocks["wedo_motor_run"] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Run motor at")
-          .appendField(new Blockly.FieldNumber(50, 0, 100), "POWER")
-          .appendField("% power");
+          .appendField("включить")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["мотор", "motor"],
+            ]),
+            "TYPE"
+          )
+          .appendField("на")
+          .appendField(new Blockly.FieldNumber(1, 0, 100), "POWER")
+          .appendField("секунду");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Run the motor at specified power (0-100%)");
+        this.setTooltip("Включить мотор на указанное время");
       },
     };
 
     Blockly.Blocks["wedo_motor_reverse"] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Run motor reverse at")
-          .appendField(new Blockly.FieldNumber(50, 0, 100), "POWER")
-          .appendField("% power");
+          .appendField("выключить")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["мотор", "motor"],
+            ]),
+            "TYPE"
+          );
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Run the motor in reverse");
+        this.setTooltip("Выключить мотор");
       },
     };
 
     Blockly.Blocks["wedo_motor_stop_brake"] = {
       init: function () {
-        this.appendDummyInput().appendField("Stop motor (Brake)");
+        this.appendDummyInput()
+          .appendField("установить мощность")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["мотор", "motor"],
+            ]),
+            "TYPE"
+          )
+          .appendField("в")
+          .appendField(new Blockly.FieldNumber(100, 0, 100), "POWER");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Stop the motor with braking");
+        this.setTooltip("Установить мощность мотора");
       },
     };
 
     Blockly.Blocks["wedo_motor_stop_coast"] = {
       init: function () {
-        this.appendDummyInput().appendField("Stop motor (Coast)");
+        this.appendDummyInput()
+          .appendField("установить направление")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["мотор", "motor"],
+            ]),
+            "TYPE"
+          )
+          .appendField("в")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["сюда ⇾", "forward"],
+              ["туда ⇽", "reverse"],
+            ]),
+            "DIRECTION"
+          );
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Stop the motor freely");
+        this.setTooltip("Установить направление мотора");
       },
     };
 
     Blockly.Blocks["wedo_motor_toggle"] = {
       init: function () {
-        this.appendDummyInput().appendField("Toggle motor direction");
+        this.appendDummyInput()
+          .appendField("установить цвет лампочки")
+          .appendField(new Blockly.FieldNumber(50, 0, 100), "COLOR");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Reverse motor direction");
+        this.setTooltip("Установить цвет лампочки");
       },
     };
 
     Blockly.Blocks["wedo_motor_for_seconds"] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Run motor at")
-          .appendField(new Blockly.FieldNumber(50, 0, 100), "POWER")
-          .appendField("% for")
-          .appendField(new Blockly.FieldNumber(2, 0), "SECONDS")
-          .appendField("seconds");
+          .appendField("включить")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["мотор", "motor"],
+            ]),
+            "TYPE"
+          )
+          .appendField("на")
+          .appendField(new Blockly.FieldNumber(1, 0, 100), "POWER")
+          .appendField("секунду");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(230);
-        this.setTooltip("Run motor for specified time");
+        this.setTooltip("Включить мотор на указанное время");
       },
     };
 
     Blockly.Blocks["wedo_sensor_motion"] = {
       init: function () {
-        this.appendDummyInput().appendField("Motion sensor value");
-        this.setOutput(true, "Number");
+        this.appendDummyInput()
+          .appendField("когда расстояние")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["<", "less"],
+              [">", "greater"],
+            ]),
+            "OPERATOR"
+          )
+          .appendField(new Blockly.FieldNumber(50, 0, 100), "VALUE");
+        this.setOutput(true, "Boolean");
         this.setColour(160);
-        this.setTooltip("Get current motion sensor reading");
+        this.setTooltip("Проверить расстояние от датчика");
       },
     };
 
     Blockly.Blocks["wedo_sensor_tilt"] = {
       init: function () {
-        this.appendDummyInput().appendField("Tilt sensor state");
-        this.setOutput(true, "String");
+        this.appendDummyInput()
+          .appendField("когда наклонен")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["любая", "any"],
+              ["↑", "up"],
+              ["↓", "down"],
+              ["←", "left"],
+              ["→", "right"],
+            ]),
+            "DIRECTION"
+          );
+        this.setOutput(true, "Boolean");
         this.setColour(160);
-        this.setTooltip("Get tilt state (forward/back/left/right/none)");
+        this.setTooltip("Проверить наклон датчика");
       },
     };
 
     Blockly.Blocks["wedo_sensor_light"] = {
       init: function () {
-        this.appendDummyInput().appendField("Light level (0-100)");
+        this.appendDummyInput()
+          .appendField("расстояние");
         this.setOutput(true, "Number");
         this.setColour(160);
-        this.setTooltip("Get light sensor reading");
+        this.setTooltip("Получить расстояние от датчика");
       },
     };
 
     Blockly.Blocks["wedo_sensor_button"] = {
       init: function () {
-        this.appendDummyInput().appendField("Hub button pressed?");
-        this.setOutput(true, "Boolean");
+        this.appendDummyInput()
+          .appendField("наклонен")
+          .appendField(
+            new Blockly.FieldDropdown([
+              ["любая", "any"],
+              ["?", "unknown"],
+            ]),
+            "DIRECTION"
+          );
+        this.setOutput(true, "String");
         this.setColour(160);
-        this.setTooltip("Check if hub button is pressed");
+        this.setTooltip("Проверить наклон");
       },
     };
 
     Blockly.Blocks["wedo_led_color"] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Set LED to")
+          .appendField("угол наклона")
           .appendField(
             new Blockly.FieldDropdown([
-              ["Off", "off"],
-              ["White", "white"],
-              ["Red", "red"],
-              ["Green", "green"],
-              ["Blue", "blue"],
-              ["Yellow", "yellow"],
-              ["Purple", "purple"],
-              ["Cyan", "cyan"],
+              ["вверх", "up"],
+              ["вниз", "down"],
             ]),
-            "COLOR"
+            "DIRECTION"
           );
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
+        this.setOutput(true, "String");
         this.setColour(20);
-        this.setTooltip("Change hub LED color");
+        this.setTooltip("Получить угол наклона");
       },
     };
 

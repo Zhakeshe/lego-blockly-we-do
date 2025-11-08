@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Square, AlertCircle } from "lucide-react";
+import { Play, Square, AlertCircle, Save, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 declare const Blockly: any;
@@ -15,6 +16,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const workspaceRef = useRef<any>(null);
   const [isRunning, setIsRunning] = useState(false);
   const stopRequestedRef = useRef(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -298,13 +300,13 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     const Blockly = (window as any).Blockly;
     if (!Blockly) {
-      toast.error("Blockly not loaded");
+      toast.error(t("error.blocklyNotLoaded"));
       return;
     }
 
     if (wedo.status !== "Connected") {
-      toast.error("Please connect to WeDo device before running the program", {
-        description: "Click 'Connect WeDo' button in the control panel",
+      toast.error(t("error.notConnected"), {
+        description: t("control.connect"),
         duration: 4000,
       });
       return;
@@ -328,7 +330,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       await program(wedo);
 
       if (!stopRequestedRef.current) {
-        toast.success("Program completed");
+        toast.success(t("success.programComplete"));
       }
     } catch (error) {
       toast.error(`Error: ${error}`);
@@ -342,26 +344,66 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     stopRequestedRef.current = true;
     setIsRunning(false);
     await wedo.stopMotorBrake();
-    toast.info("Program stopped");
+    toast.info(t("info.programStopped"));
+  };
+
+  const saveWorkspace = () => {
+    if (!workspaceRef.current) return;
+    const Blockly = (window as any).Blockly;
+    if (!Blockly) return;
+
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    const xmlText = Blockly.Xml.domToText(xml);
+    localStorage.setItem("wedo_workspace", xmlText);
+    toast.success(t("success.saved"));
+  };
+
+  const loadWorkspace = () => {
+    if (!workspaceRef.current) return;
+    const Blockly = (window as any).Blockly;
+    if (!Blockly) return;
+
+    const xmlText = localStorage.getItem("wedo_workspace");
+    if (!xmlText) {
+      toast.error(t("error.noSavedProgram"));
+      return;
+    }
+
+    try {
+      const xml = Blockly.utils.xml.textToDom(xmlText);
+      workspaceRef.current.clear();
+      Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+      toast.success(t("success.loaded"));
+    } catch (error) {
+      toast.error(`Error: ${error}`);
+    }
   };
 
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-text1">Visual Editor</h2>
+        <h2 className="text-lg font-semibold text-text1">{t("workspace.title")}</h2>
         <div className="flex gap-2">
+          <Button onClick={saveWorkspace} variant="outline" size="sm">
+            <Save className="w-4 h-4 mr-2" />
+            {t("control.save")}
+          </Button>
+          <Button onClick={loadWorkspace} variant="outline" size="sm">
+            <FolderOpen className="w-4 h-4 mr-2" />
+            {t("control.load")}
+          </Button>
           {!isRunning ? (
             <Button
               onClick={runCode}
               className="bg-success hover:bg-success/80 text-white"
             >
               <Play className="w-4 h-4 mr-2" />
-              Run Code
+              {t("control.run")}
             </Button>
           ) : (
             <Button onClick={stopCode} variant="destructive">
               <Square className="w-4 h-4 mr-2" />
-              Stop
+              {t("control.stop")}
             </Button>
           )}
         </div>
@@ -370,7 +412,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       {wedo.status !== "Connected" && (
         <div className="flex items-center gap-2 px-4 py-3 bg-info/10 border border-info/30 rounded-lg text-info text-sm">
           <AlertCircle className="w-4 h-4" />
-          <span>You can create your program now. Connect WeDo to run it.</span>
+          <span>{t("workspace.info")}</span>
         </div>
       )}
 

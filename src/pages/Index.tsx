@@ -3,10 +3,14 @@ import { BlocklyWorkspace } from "@/components/BlocklyWorkspace";
 import { ControlPanel } from "@/components/ControlPanel";
 import { TelemetryPanel } from "@/components/TelemetryPanel";
 import { ConsoleLog } from "@/components/ConsoleLog";
+import { NavigationMenu } from "@/components/NavigationMenu";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useWeDo } from "@/hooks/useWeDo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Cpu } from "lucide-react";
 const Index = () => {
   const wedo = useWeDo();
+  const { t } = useLanguage();
   const [logs, setLogs] = useState<Array<{
     timestamp: Date;
     message: string;
@@ -32,13 +36,15 @@ const Index = () => {
                   <Cpu className="w-6 h-6 text-bg" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-text1">S7 Robotics</h1>
-                  <p className="text-xs font-mono text-text4">Visual Programming Platform</p>
+                  <h1 className="text-xl font-semibold text-text1">{t("app.title")}</h1>
+                  <p className="text-xs font-mono text-text4">{t("app.subtitle")}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
+                <NavigationMenu />
+                <LanguageSwitcher />
                 <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${wedo.status === "Connected" ? "bg-success/10 border-success/30 text-success" : wedo.status === "Connecting" ? "bg-warning/10 border-warning/30 text-warning animate-pulse-glow" : "bg-border2 border-border1 text-text4"}`}>
-                  {wedo.status}
+                  {t(`status.${wedo.status.toLowerCase()}`)}
                 </span>
               </div>
             </div>

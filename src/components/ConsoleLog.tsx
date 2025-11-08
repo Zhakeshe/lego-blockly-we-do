@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Terminal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LogEntry {
   timestamp: Date;
@@ -14,6 +15,7 @@ interface ConsoleLogProps {
 }
 
 export const ConsoleLog = ({ logs }: ConsoleLogProps) => {
+  const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export const ConsoleLog = ({ logs }: ConsoleLogProps) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-text3" />
-          <h3 className="text-lg font-semibold text-text1">Console</h3>
+          <h3 className="text-lg font-semibold text-text1">{t("console.title")}</h3>
         </div>
         <Button
           variant="ghost"

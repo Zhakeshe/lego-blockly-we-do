@@ -1,6 +1,7 @@
 import { Bluetooth, BluetoothOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 interface ControlPanelProps {
@@ -8,6 +9,7 @@ interface ControlPanelProps {
 }
 
 export const ControlPanel = ({ wedo }: ControlPanelProps) => {
+  const { t } = useLanguage();
   const handleConnect = async () => {
     try {
       await wedo.connect();
@@ -28,7 +30,7 @@ export const ControlPanel = ({ wedo }: ControlPanelProps) => {
 
   return (
     <div className="bg-surface1 border border-dashed border-border1 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-text1 mb-4">Device Control</h3>
+      <h3 className="text-lg font-semibold text-text1 mb-4">{t("control.title")}</h3>
       
       <div className="space-y-3">
         {wedo.status === "Disconnected" ? (
@@ -36,8 +38,8 @@ export const ControlPanel = ({ wedo }: ControlPanelProps) => {
             onClick={handleConnect}
             className="w-full bg-info hover:bg-info/80 text-white"
           >
-            <Bluetooth className="w-4 h-4 mr-2" />
-            Connect WeDo
+          <Bluetooth className="w-4 h-4 mr-2" />
+          {t("control.connect")}
           </Button>
         ) : (
           <Button
@@ -45,20 +47,20 @@ export const ControlPanel = ({ wedo }: ControlPanelProps) => {
             variant="outline"
             className="w-full border-border2 hover:bg-surface2"
           >
-            <BluetoothOff className="w-4 h-4 mr-2" />
-            Disconnect
+          <BluetoothOff className="w-4 h-4 mr-2" />
+          {t("control.disconnect")}
           </Button>
         )}
 
         <div className="pt-4 border-t border-border2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-text3 font-mono">Status:</span>
+            <span className="text-text3 font-mono">{t("status.label")}</span>
             <span className={`font-mono font-medium ${
               wedo.status === "Connected" ? "text-success" : 
               wedo.status === "Connecting" ? "text-warning" : 
               "text-text4"
             }`}>
-              {wedo.status}
+              {t(`status.${wedo.status.toLowerCase()}`)}
             </span>
           </div>
         </div>

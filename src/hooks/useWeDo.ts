@@ -57,9 +57,7 @@ export const useWeDo = (): WeDoHook => {
   const characteristicRef = useRef<any>(null);
   const logCallbackRef = useRef<((message: string, type: "info" | "error" | "success" | "command") => void) | null>(null);
   const isReconnectingRef = useRef(false);
-  const motorDirectionRef = useRef<number>(1); // 1 = forward, -1 = reverse
-
-
+  const motorDirectionRef = useRef<number>(1);
 
   const log = useCallback((message: string, type: "info" | "error" | "success" | "command" = "info") => {
     console.log(`[${type.toUpperCase()}] ${message}`);
@@ -76,9 +74,7 @@ export const useWeDo = (): WeDoHook => {
   };
 
   const writeCommand = useCallback(async (bytes: Uint8Array) => {
-    if (!characteristicRef.current) {
-      throw new Error("Not connected to WeDo device");
-    }
+    if (!characteristicRef.current) throw new Error("Not connected to WeDo device");
     try {
       log(`→ ${hex(bytes)}`, "command");
       await characteristicRef.current.writeValue(bytes);
@@ -96,32 +92,17 @@ export const useWeDo = (): WeDoHook => {
     const bytes = new Uint8Array(value.buffer);
     log(`← ${hex(bytes)}`, "command");
 
-    // Parse sensor data (simplified)
     if (bytes.length >= 3) {
       const sensorType = bytes[1];
       const sensorValue = bytes[2];
-
       setTelemetry((prev) => {
         const updated = { ...prev };
-        
-        // Motion sensor (0x01)
-        if (sensorType === 0x01) {
-          updated.motion = sensorValue;
-        }
-        // Tilt sensor (0x02)
+        if (sensorType === 0x01) updated.motion = sensorValue;
         else if (sensorType === 0x02) {
           const tiltStates = ["none", "forward", "back", "left", "right"];
           updated.tilt = tiltStates[sensorValue] || "none";
-        }
-        // Light sensor (0x03)
-        else if (sensorType === 0x03) {
-          updated.light = Math.round((sensorValue / 255) * 100);
-        }
-        // Hub button (0x05)
-        else if (sensorType === 0x05) {
-          updated.hubButton = sensorValue === 1;
-        }
-        
+        } else if (sensorType === 0x03) updated.light = Math.round((sensorValue / 255) * 100);
+        else if (sensorType === 0x05) updated.hubButton = sensorValue === 1;
         return updated;
       });
     }
@@ -129,18 +110,16 @@ export const useWeDo = (): WeDoHook => {
 
   const connect = useCallback(async () => {
     if (!(navigator as any).bluetooth) {
-      log("Web Bluetooth API is not available in this browser", "error");
+      log("Web Bluetooth API is not available", "error");
       throw new Error("Web Bluetooth not supported");
     }
 
     try {
       setStatusWithLog("Connecting");
-      
       log("Requesting WeDo device...");
+
       const device = await (navigator as any).bluetooth.requestDevice({
-        optionalServices: [WEDO_SERVICE_UUID],
-        acceptAllDevices: true, 
-        optionalServices: ['00001523-1212-efde-1523-785feabcd123'] 
+        filters: [{ namePrefix: "LPF2", services: [WEDO_SERVICE_UUID] }]
       });
 
       deviceRef.current = device;
@@ -149,29 +128,23 @@ export const useWeDo = (): WeDoHook => {
       device.addEventListener("gattserverdisconnected", async () => {
         log("Device disconnected", "error");
         setStatusWithLog("Disconnected");
-        
-        // Auto-reconnect
+
         if (!isReconnectingRef.current) {
           isReconnectingRef.current = true;
           log("Attempting to reconnect...");
           setTimeout(async () => {
-            try {
-              await connect();
-            } catch (error) {
-              log(`Reconnect failed: ${error}`, "error");
-            } finally {
-              isReconnectingRef.current = false;
-            }
+            try { await connect(); } catch (err) { log(`Reconnect failed: ${err}`, "error"); }
+            finally { isReconnectingRef.current = false; }
           }, 2000);
         }
       });
 
       log("Connecting to GATT server...");
       const server = await device.gatt!.connect();
-      
+
       log("Getting WeDo service...");
       const service = await server.getPrimaryService(WEDO_SERVICE_UUID);
-      
+
       log("Getting characteristic...");
       const characteristic = await service.getCharacteristic(WEDO_CHARACTERISTIC_UUID);
       characteristicRef.current = characteristic;
@@ -182,6 +155,7 @@ export const useWeDo = (): WeDoHook => {
 
       setStatusWithLog("Connected");
       log("✓ WeDo 2.0 connected successfully", "success");
+
     } catch (error) {
       log(`Connection error: ${error}`, "error");
       setStatusWithLog("Disconnected");
@@ -195,11 +169,11 @@ export const useWeDo = (): WeDoHook => {
         await characteristicRef.current.stopNotifications();
         characteristicRef.current.removeEventListener("characteristicvaluechanged", handleNotification);
       }
-      
+
       if (deviceRef.current?.gatt?.connected) {
         await deviceRef.current.gatt.disconnect();
       }
-      
+
       deviceRef.current = null;
       characteristicRef.current = null;
       setStatusWithLog("Disconnected");
@@ -210,14 +184,13 @@ export const useWeDo = (): WeDoHook => {
   }, [setStatusWithLog, log, handleNotification]);
 
   const runMotor = useCallback(async (power: number) => {
-    const clampedPower = Math.max(0, Math.min(100, power)) * motorDirectionRef.current;
-    const powerByte = Math.round((clampedPower / 100) * 127);
+    const clamped = Math.max(0, Math.min(100, power)) * motorDirectionRef.current;
+    const powerByte = Math.round((clamped / 100) * 127);
     await writeCommand(new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, powerByte & 0xFF]));
   }, [writeCommand]);
 
   const runMotorReverse = useCallback(async (power: number) => {
-    const clampedPower = Math.max(0, Math.min(100, power));
-    const powerByte = Math.round((clampedPower / 100) * -127);
+    const powerByte = Math.round((Math.max(0, Math.min(100, power)) / 100) * -127);
     await writeCommand(new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, powerByte & 0xFF]));
   }, [writeCommand]);
 
@@ -225,9 +198,7 @@ export const useWeDo = (): WeDoHook => {
     await writeCommand(new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, 0x00]));
   }, [writeCommand]);
 
-  const stopMotorCoast = useCallback(async () => {
-    await writeCommand(new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, 0x00]));
-  }, [writeCommand]);
+  const stopMotorCoast = stopMotorBrake;
 
   const toggleDirection = useCallback(async () => {
     motorDirectionRef.current *= -1;
@@ -236,7 +207,7 @@ export const useWeDo = (): WeDoHook => {
 
   const runMotorForSeconds = useCallback(async (power: number, seconds: number) => {
     await runMotor(power);
-    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+    await new Promise((res) => setTimeout(res, seconds * 1000));
     await stopMotorBrake();
   }, [runMotor, stopMotorBrake]);
 

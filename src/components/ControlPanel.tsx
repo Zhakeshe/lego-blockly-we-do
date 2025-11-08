@@ -10,14 +10,8 @@ interface ControlPanelProps {
 
 export const ControlPanel = ({ wedo }: ControlPanelProps) => {
   const { t } = useLanguage();
-
   const handleConnect = async () => {
     try {
-      if (!navigator.bluetooth) {
-        toast.error("Web Bluetooth API is not available in this browser");
-        return;
-      }
-
       await wedo.connect();
       toast.success("Connected to WeDo 2.0");
     } catch (error) {
@@ -36,18 +30,16 @@ export const ControlPanel = ({ wedo }: ControlPanelProps) => {
 
   return (
     <div className="bg-surface1 border border-dashed border-border1 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-text1 mb-4">
-        {t("control.title")}
-      </h3>
-
+      <h3 className="text-lg font-semibold text-text1 mb-4">{t("control.title")}</h3>
+      
       <div className="space-y-3">
         {wedo.status === "Disconnected" ? (
           <Button
             onClick={handleConnect}
             className="w-full bg-info hover:bg-info/80 text-white"
           >
-            <Bluetooth className="w-4 h-4 mr-2" />
-            {t("control.connect")}
+          <Bluetooth className="w-4 h-4 mr-2" />
+          {t("control.connect")}
           </Button>
         ) : (
           <Button
@@ -55,23 +47,19 @@ export const ControlPanel = ({ wedo }: ControlPanelProps) => {
             variant="outline"
             className="w-full border-border2 hover:bg-surface2"
           >
-            <BluetoothOff className="w-4 h-4 mr-2" />
-            {t("control.disconnect")}
+          <BluetoothOff className="w-4 h-4 mr-2" />
+          {t("control.disconnect")}
           </Button>
         )}
 
         <div className="pt-4 border-t border-border2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-text3 font-mono">{t("status.label")}</span>
-            <span
-              className={`font-mono font-medium ${
-                wedo.status === "Connected"
-                  ? "text-success"
-                  : wedo.status === "Connecting"
-                  ? "text-warning"
-                  : "text-text4"
-              }`}
-            >
+            <span className={`font-mono font-medium ${
+              wedo.status === "Connected" ? "text-success" : 
+              wedo.status === "Connecting" ? "text-warning" : 
+              "text-text4"
+            }`}>
               {t(`status.${wedo.status.toLowerCase()}`)}
             </span>
           </div>

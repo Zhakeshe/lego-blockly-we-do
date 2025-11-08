@@ -552,6 +552,22 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
     localStorage.setItem("wedo_workspace", xmlText);
+    
+    // Save to current project if exists
+    const currentProjectId = localStorage.getItem("current_project_id");
+    if (currentProjectId) {
+      const projectsData = localStorage.getItem("wedo_projects");
+      if (projectsData) {
+        const projects = JSON.parse(projectsData);
+        const projectIndex = projects.findIndex((p: any) => p.id === currentProjectId);
+        if (projectIndex !== -1) {
+          projects[projectIndex].workspace = xmlText;
+          projects[projectIndex].modified = new Date().toISOString();
+          localStorage.setItem("wedo_projects", JSON.stringify(projects));
+        }
+      }
+    }
+    
     toast.success(t("success.saved"));
   };
 
@@ -575,6 +591,24 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       toast.error(`Error: ${error}`);
     }
   };
+
+  // Auto-load workspace on mount
+  useEffect(() => {
+    if (!workspaceRef.current || !blocklyLoaded) return;
+    
+    const Blockly = (window as any).Blockly;
+    if (!Blockly) return;
+
+    const xmlText = localStorage.getItem("wedo_workspace");
+    if (xmlText) {
+      try {
+        const xml = Blockly.utils.xml.textToDom(xmlText);
+        Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+      } catch (error) {
+        console.error("Failed to load workspace:", error);
+      }
+    }
+  }, [blocklyLoaded]);
 
   return (
     <div className="flex flex-col h-full gap-4">

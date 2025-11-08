@@ -1,12 +1,13 @@
 import { NavLink } from "@/components/NavLink";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Map, Boxes, Brain } from "lucide-react";
+import { Map, Boxes, Brain, FolderOpen } from "lucide-react";
 
 export const NavigationMenu = () => {
   const { t } = useLanguage();
 
   const menuItems = [
     { to: "/", label: t("menu.main"), icon: Brain },
+    { to: "/projects", label: t("menu.projects"), icon: FolderOpen },
     { to: "/visual", label: t("menu.visual"), icon: Map },
     { to: "/constructor", label: t("menu.constructor"), icon: Boxes },
   ];

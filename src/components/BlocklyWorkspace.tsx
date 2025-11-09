@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
-import * as Blockly from 'blockly/browser';
-import 'blockly/blocks';
-import 'blockly/javascript';
+import * as Blockly from "blockly/core";
+import "blockly/blocks";
+import "blockly/javascript";
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;
@@ -222,16 +222,16 @@ const defineCustomBlocks = (wedo: WeDoHook) => {
   };
 
   // Generators
-  Blockly.JavaScript["wedo_motor_run"] = () => `await wedo.runMotor(100);\n`;
-  Blockly.JavaScript["wedo_motor_reverse"] = () => `await wedo.runMotorReverse(100);\n`;
+  Blockly.JavaScript["wedo_motor_run"] = (block: any) => `await wedo.runMotor(100);\n`;
+  Blockly.JavaScript["wedo_motor_reverse"] = (block: any) => `await wedo.runMotorReverse(100);\n`;
   Blockly.JavaScript["wedo_motor_stop_brake"] = () => `await wedo.stopMotorBrake();\n`;
   Blockly.JavaScript["wedo_motor_stop_coast"] = () => `await wedo.stopMotorCoast();\n`;
-  Blockly.JavaScript["wedo_motor_for_seconds"] = () => `await wedo.runMotorForSeconds(100, 1);\n`;
+  Blockly.JavaScript["wedo_motor_for_seconds"] = (block: any) => `await wedo.runMotorForSeconds(100, 1);\n`;
   Blockly.JavaScript["wedo_sensor_motion"] = () => ["wedo.getMotion()", Blockly.JavaScript.ORDER_ATOMIC];
   Blockly.JavaScript["wedo_sensor_tilt"] = () => ["wedo.getTilt()", Blockly.JavaScript.ORDER_ATOMIC];
   Blockly.JavaScript["wedo_sensor_light"] = () => ["wedo.getDistance()", Blockly.JavaScript.ORDER_ATOMIC];
   Blockly.JavaScript["wedo_sensor_button"] = () => ["wedo.getTilt()", Blockly.JavaScript.ORDER_ATOMIC];
-  Blockly.JavaScript["wedo_led_color"] = () => `await wedo.setLedColor(50);\n`;
+  Blockly.JavaScript["wedo_led_color"] = (block: any) => `await wedo.setLedColor(50);\n`;
 };
 
 export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
@@ -241,12 +241,15 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
 
+  // Define blocks once
   useEffect(() => {
     defineCustomBlocks(wedo);
   }, [wedo]);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
+
+    const labels = getBlockLabels(language);
 
     const toolbox = `
       <xml style="display: none">
@@ -292,6 +295,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     const code = Blockly.JavaScript.workspaceToCode(workspaceRef.current);
     try {
       setIsRunning(true);
+      // eslint-disable-next-line no-eval
       await eval(`(async ()=>{${code}})()`);
     } catch (err) {
       console.error(err);
@@ -300,7 +304,9 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     }
   };
 
-  const stopCode = () => setIsRunning(false);
+  const stopCode = () => {
+    setIsRunning(false);
+  };
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -328,4 +334,3 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 };
 
 export default BlocklyWorkspace;
-

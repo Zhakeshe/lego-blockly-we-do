@@ -68,8 +68,8 @@ export const useWeDo = (): WeDoHook => {
     setStatus("Connecting");
 
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [SERVICE_UUID] }],
-      optionalServices: [SERVICE_UUID],
+      acceptAllDevices: true,
+      optionalServices: [WEDO_SERVICE_UUID]
     });
 
     deviceRef.current = device;

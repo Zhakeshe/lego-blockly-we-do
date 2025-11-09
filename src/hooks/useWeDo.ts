@@ -119,7 +119,12 @@ export const useWeDo = (): WeDoHook => {
       log("Requesting WeDo device...");
 
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [{ namePrefix: "LPF2", services: [WEDO_SERVICE_UUID] }]
+        filters: [
+          { namePrefix: "LPF2" },
+          { namePrefix: "WeDo" },
+          { services: [WEDO_SERVICE_UUID] }
+        ],
+        optionalServices: [WEDO_SERVICE_UUID]
       });
 
       deviceRef.current = device;

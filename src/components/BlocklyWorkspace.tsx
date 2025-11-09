@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
-import Blockly from 'blockly/core';
+import * as Blockly from "blockly/core";
 import 'blockly/blocks';       // block definitions
 import 'blockly/javascript';   // JS generator
 

@@ -540,7 +540,9 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const stopCode = async () => {
     stopRequestedRef.current = true;
     setIsRunning(false);
-    await wedo.stopMotorBrake();
+    if (wedo.status === "Connected") {
+      await wedo.stopMotor();
+    }
     toast.info(t("info.programStopped"));
   };
 

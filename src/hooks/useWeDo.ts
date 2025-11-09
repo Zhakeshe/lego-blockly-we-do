@@ -29,8 +29,8 @@ export interface WeDoHook {
   setLogCallback: (callback: (message: string, type: "info" | "error" | "success" | "command") => void) => void;
 }
 
-const WEDO_SERVICE_UUID = "00004f0e-1212-efde-1523-785feabcd123";
-const WEDO_CHARACTERISTIC_UUID = "00001565-1212-efde-1523-785feabcd123";
+const WEDO_SERVICE_UUID = "00001523-1212-efde-1523-785feabcd123";
+const WEDO_CHARACTERISTIC_UUID = "00001524-1212-efde-1523-785feabcd123";
 
 const LED_COLORS: Record<string, number> = {
   off: 0,

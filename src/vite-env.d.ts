@@ -43,6 +43,7 @@ declare global {
       services?: string[];
     }>;
     optionalServices?: string[];
+    acceptAllDevices?: boolean;
   }
 
   interface Bluetooth {

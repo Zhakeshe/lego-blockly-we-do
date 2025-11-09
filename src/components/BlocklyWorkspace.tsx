@@ -485,6 +485,12 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     workspaceRef.current = workspace;
 
+    setTimeout(() => {
+      if (Blockly.svgResize) {
+        Blockly.svgResize(workspace);
+      }
+    }, 500);
+
     return () => {
       if (workspace) {
         workspace.dispose();

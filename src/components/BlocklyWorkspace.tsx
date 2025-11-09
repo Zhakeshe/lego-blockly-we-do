@@ -111,7 +111,10 @@ const defineCustomBlocks = () => {
     `;
   };
 
-  Blockly.JavaScript["wedo_motor_stop"] = () => await wedo.stopMotor();\n;
+  Blockly.JavaScript["wedo_motor_stop"] = function () {
+    return `await wedo.stopMotorBrake();\n`;
+  };
+
 };
 
 // === Компонент ===

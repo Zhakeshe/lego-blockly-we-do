@@ -120,12 +120,7 @@ export const useWeDo = (): WeDoHook => {
 
       log("Opening device selector...");
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [
-          { namePrefix: "LPF2" },
-          { namePrefix: "LEGO" },
-          { namePrefix: "WeDo" },
-          { name: "Smart Hub" }
-        ],
+        acceptAllDevices: true,
         optionalServices: [WEDO_SERVICE_UUID]
       });
 

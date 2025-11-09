@@ -120,7 +120,9 @@ export const useWeDo = (): WeDoHook => {
 
       log("Opening device selector...");
       const device = await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters: [
+          { services: [WEDO_SERVICE_UUID] }
+        ],
         optionalServices: [WEDO_SERVICE_UUID]
       });
 

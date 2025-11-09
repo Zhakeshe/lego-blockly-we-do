@@ -14,6 +14,335 @@ interface BlocklyWorkspaceProps {
   wedo: WeDoHook;
 }
 
+// Multilingual block labels (Moved outside component)
+const getBlockLabels = (language: string) => {
+  if (language === 'kk') {
+    return {
+      motorOn: "қосу",
+      motorOff: "өшіру", 
+      motorPower: "қуат орнату",
+      motorDirection: "бағыт орнату",
+      motor: "қозғалтқыш",
+      on: "қосу",
+      seconds: "секунд",
+      setPower: "қуат орнату",
+      to: "дейін",
+      setDirection: "бағыт орнату",
+      forward: "алға",
+      backward: "артқа",
+      setLedColor: "шам түсін орнату",
+      whenDistance: "қашықтық болғанда",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "еңкейгенде",
+      any: "кез келген",
+      distance: "қашықтық",
+      tilted: "еңкейген",
+      tiltAngle: "еңкею бұрышы"
+    };
+  } else if (language === 'ru') {
+    return {
+      motorOn: "включить",
+      motorOff: "выключить",
+      motorPower: "установить мощность", 
+      motorDirection: "установить направление",
+      motor: "мотор",
+      on: "на",
+      seconds: "секунду",
+      setPower: "установить мощность",
+      to: "в",
+      setDirection: "установить направление",
+      forward: "сюда ⇾",
+      backward: "туда ⇽",
+      setLedColor: "установить цвет лампочки",
+      whenDistance: "когда расстояние",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "когда наклонен",
+      any: "любая",
+      distance: "расстояние",
+      tilted: "наклонен",
+      tiltAngle: "угол наклона"
+    };
+  } else {
+    return {
+      motorOn: "turn on",
+      motorOff: "turn off",
+      motorPower: "set motor power",
+      motorDirection: "set motor direction",
+      motor: "motor",
+      on: "for",
+      seconds: "seconds",
+      setPower: "set power",
+      to: "to",
+      setDirection: "set direction",
+      forward: "forward ⇾",
+      backward: "backward ⇽",
+      setLedColor: "set LED color",
+      whenDistance: "when distance",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "when tilted",
+      any: "any",
+      distance: "distance",
+      tilted: "tilted",
+      tiltAngle: "tilt angle"
+    };
+  }
+};
+
+// Define custom blocks and generators (Moved outside component)
+const defineCustomBlocks = (wedo: WeDoHook) => {
+  // We define blocks only once, using a default language for the fields,
+  // as the display language is handled by the toolbox XML.
+  const labels = getBlockLabels('en');
+
+  // Define custom blocks with multilingual support
+  Blockly.Blocks["wedo_motor_run"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.motorOn)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.motor, "motor"],
+          ]),
+          "TYPE"
+        )
+        .appendField(labels.on)
+        .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
+        .appendField(labels.seconds);
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_reverse"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.motorOff)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.motor, "motor"],
+          ]),
+          "TYPE"
+        );
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_stop_brake"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setPower)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.motor, "motor"],
+          ]),
+          "TYPE"
+        )
+        .appendField(labels.to)
+        .appendField(new Blockly.FieldNumber(100, 0, 100), "POWER");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_stop_coast"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setDirection)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.motor, "motor"],
+          ]),
+          "TYPE"
+        )
+        .appendField(labels.to)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.forward, "forward"],
+            [labels.backward, "backward"],
+          ]),
+          "DIRECTION"
+        );
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_toggle"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setLedColor)
+        .appendField(new Blockly.FieldNumber(50, 0, 100), "COLOR");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(20);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_for_seconds"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.motorOn)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.motor, "motor"],
+          ]),
+          "TYPE"
+        )
+        .appendField(labels.on)
+        .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
+        .appendField(labels.seconds);
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_sensor_motion"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.whenDistance)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.lessThan, "less"],
+            [labels.greaterThan, "greater"],
+          ]),
+          "OPERATOR"
+        )
+        .appendField(new Blockly.FieldNumber(50, 0, 100), "VALUE");
+      this.setOutput(true, "Boolean");
+      this.setColour(175);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_sensor_tilt"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.whenTilted)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.any, "any"],
+          ]),
+          "DIRECTION"
+        );
+      this.setOutput(true, "Boolean");
+      this.setColour(175);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_sensor_light"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.distance);
+      this.setOutput(true, "Number");
+      this.setColour(175);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_sensor_button"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.tilted)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.any, "any"],
+            ["?", "unknown"],
+          ]),
+          "DIRECTION"
+        );
+      this.setOutput(true, "String");
+      this.setColour(175);
+      this.setTooltip("");
+    },
+  };
+
+  Blockly.Blocks["wedo_led_color"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.tiltAngle)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.forward, "up"],
+            [labels.backward, "down"],
+          ]),
+          "DIRECTION"
+        );
+      this.setOutput(true, "String");
+      this.setColour(20);
+      this.setTooltip("");
+    },
+  };
+
+  // Generators
+  Blockly.JavaScript["wedo_motor_run"] = function (block: any) {
+    const power = block.getFieldValue("POWER");
+    return `await wedo.runMotor(${power});\n`;
+  };
+
+  Blockly.JavaScript["wedo_motor_reverse"] = function (block: any) {
+    const power = block.getFieldValue("POWER");
+    return `await wedo.runMotorReverse(${power});\n`;
+  };
+
+  Blockly.JavaScript["wedo_motor_stop_brake"] = function () {
+    return `await wedo.stopMotorBrake();\n`;
+  };
+
+  Blockly.JavaScript["wedo_motor_stop_coast"] = function () {
+    return `await wedo.stopMotorCoast();\n`;
+  };
+
+  Blockly.JavaScript["wedo_motor_toggle"] = function () {
+    return `await wedo.toggleDirection();\n`;
+  };
+
+  Blockly.JavaScript["wedo_motor_for_seconds"] = function (block: any) {
+    const power = block.getFieldValue("POWER");
+    const seconds = block.getFieldValue("SECONDS");
+    return `await wedo.runMotorForSeconds(${power}, ${seconds});\n`;
+  };
+
+  Blockly.JavaScript["wedo_sensor_motion"] = function () {
+    return [`wedo.getMotion()`, Blockly.JavaScript.ORDER_ATOMIC];
+  };
+
+  Blockly.JavaScript["wedo_sensor_tilt"] = function () {
+    return [`wedo.getTilt()`, Blockly.JavaScript.ORDER_ATOMIC];
+  };
+
+  Blockly.JavaScript["wedo_sensor_light"] = function () {
+    return [`wedo.getDistance()`, Blockly.JavaScript.ORDER_ATOMIC];
+  };
+
+  Blockly.JavaScript["wedo_sensor_button"] = function () {
+    return [`wedo.getTilt()`, Blockly.JavaScript.ORDER_ATOMIC];
+  };
+
+  Blockly.JavaScript["wedo_led_color"] = function (block: any) {
+    const color = block.getFieldValue("COLOR");
+    return `await wedo.setLedColor(${color});\n`;
+  };
+};
+
+// Flag to ensure blocks are defined only once
+let blocksDefined = false;
+
 export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<any>(null);
@@ -22,6 +351,12 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const stopRequestedRef = useRef(false);
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+
+  // Define blocks once when the component is first loaded
+  if (!blocksDefined) {
+    defineCustomBlocks(wedo);
+    blocksDefined = true;
+  }
 
   // Custom theme for dark mode
   const customTheme = Blockly.Theme.defineTheme('customTheme', {
@@ -46,326 +381,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
    useEffect(() => {
     if (!blocklyDiv.current) return;
 
-    // Multilingual block labels
-    const getBlockLabels = () => {
-      if (language === 'kk') {
-        return {
-          motorOn: "қосу",
-          motorOff: "өшіру", 
-          motorPower: "қуат орнату",
-          motorDirection: "бағыт орнату",
-          motor: "қозғалтқыш",
-          on: "қосу",
-          seconds: "секунд",
-          setPower: "қуат орнату",
-          to: "дейін",
-          setDirection: "бағыт орнату",
-          forward: "алға",
-          backward: "артқа",
-          setLedColor: "шам түсін орнату",
-          whenDistance: "қашықтық болғанда",
-          lessThan: "<",
-          greaterThan: ">",
-          whenTilted: "еңкейгенде",
-          any: "кез келген",
-          distance: "қашықтық",
-          tilted: "еңкейген",
-          tiltAngle: "еңкею бұрышы"
-        };
-      } else if (language === 'ru') {
-        return {
-          motorOn: "включить",
-          motorOff: "выключить",
-          motorPower: "установить мощность", 
-          motorDirection: "установить направление",
-          motor: "мотор",
-          on: "на",
-          seconds: "секунду",
-          setPower: "установить мощность",
-          to: "в",
-          setDirection: "установить направление",
-          forward: "сюда ⇾",
-          backward: "туда ⇽",
-          setLedColor: "установить цвет лампочки",
-          whenDistance: "когда расстояние",
-          lessThan: "<",
-          greaterThan: ">",
-          whenTilted: "когда наклонен",
-          any: "любая",
-          distance: "расстояние",
-          tilted: "наклонен",
-          tiltAngle: "угол наклона"
-        };
-      } else {
-        return {
-          motorOn: "turn on",
-          motorOff: "turn off",
-          motorPower: "set motor power",
-          motorDirection: "set motor direction",
-          motor: "motor",
-          on: "for",
-          seconds: "seconds",
-          setPower: "set power",
-          to: "to",
-          setDirection: "set direction",
-          forward: "forward ⇾",
-          backward: "backward ⇽",
-          setLedColor: "set LED color",
-          whenDistance: "when distance",
-          lessThan: "<",
-          greaterThan: ">",
-          whenTilted: "when tilted",
-          any: "any",
-          distance: "distance",
-          tilted: "tilted",
-          tiltAngle: "tilt angle"
-        };
-      }
-    };
-
-    const labels = getBlockLabels();
-
-    // Define custom blocks with multilingual support
-    Blockly.Blocks["wedo_motor_run"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.motorOn)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.motor, "motor"],
-            ]),
-            "TYPE"
-          )
-          .appendField(labels.on)
-          .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
-          .appendField(labels.seconds);
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_motor_reverse"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.motorOff)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.motor, "motor"],
-            ]),
-            "TYPE"
-          );
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_motor_stop_brake"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.setPower)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.motor, "motor"],
-            ]),
-            "TYPE"
-          )
-          .appendField(labels.to)
-          .appendField(new Blockly.FieldNumber(100, 0, 100), "POWER");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_motor_stop_coast"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.setDirection)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.motor, "motor"],
-            ]),
-            "TYPE"
-          )
-          .appendField(labels.to)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.forward, "forward"],
-              [labels.backward, "backward"],
-            ]),
-            "DIRECTION"
-          );
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_motor_toggle"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.setLedColor)
-          .appendField(new Blockly.FieldNumber(50, 0, 100), "COLOR");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(20);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_motor_for_seconds"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.motorOn)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.motor, "motor"],
-            ]),
-            "TYPE"
-          )
-          .appendField(labels.on)
-          .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
-          .appendField(labels.seconds);
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_sensor_motion"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.whenDistance)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.lessThan, "less"],
-              [labels.greaterThan, "greater"],
-            ]),
-            "OPERATOR"
-          )
-          .appendField(new Blockly.FieldNumber(50, 0, 100), "VALUE");
-        this.setOutput(true, "Boolean");
-        this.setColour(175);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_sensor_tilt"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.whenTilted)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.any, "any"],
-            ]),
-            "DIRECTION"
-          );
-        this.setOutput(true, "Boolean");
-        this.setColour(175);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_sensor_light"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.distance);
-        this.setOutput(true, "Number");
-        this.setColour(175);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_sensor_button"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.tilted)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.any, "any"],
-              ["?", "unknown"],
-            ]),
-            "DIRECTION"
-          );
-        this.setOutput(true, "String");
-        this.setColour(175);
-        this.setTooltip("");
-      },
-    };
-
-    Blockly.Blocks["wedo_led_color"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField(labels.tiltAngle)
-          .appendField(
-            new Blockly.FieldDropdown([
-              [labels.forward, "up"],
-              [labels.backward, "down"],
-            ]),
-            "DIRECTION"
-          );
-        this.setOutput(true, "String");
-        this.setColour(20);
-        this.setTooltip("");
-      },
-    };
-
-    // Generators
-    Blockly.JavaScript["wedo_motor_run"] = function (block: any) {
-      const power = block.getFieldValue("POWER");
-      return `await wedo.runMotor(${power});\n`;
-    };
-
-    Blockly.JavaScript["wedo_motor_reverse"] = function (block: any) {
-      const power = block.getFieldValue("POWER");
-      return `await wedo.runMotorReverse(${power});\n`;
-    };
-
-    Blockly.JavaScript["wedo_motor_stop_brake"] = function () {
-      return `await wedo.stopMotorBrake();\n`;
-    };
-
-    Blockly.JavaScript["wedo_motor_stop_coast"] = function () {
-      return `await wedo.stopMotorCoast();\n`;
-    };
-
-    Blockly.JavaScript["wedo_motor_toggle"] = function () {
-      return `await wedo.toggleDirection();\n`;
-    };
-
-    Blockly.JavaScript["wedo_motor_for_seconds"] = function (block: any) {
-      const power = block.getFieldValue("POWER");
-      const seconds = block.getFieldValue("SECONDS");
-      return `await wedo.runMotorForSeconds(${power}, ${seconds});\n`;
-    };
-
-    Blockly.JavaScript["wedo_sensor_motion"] = function () {
-      return [`wedo.getMotion()`, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-
-    Blockly.JavaScript["wedo_sensor_tilt"] = function () {
-      return [`wedo.getTilt()`, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-
-    Blockly.JavaScript["wedo_sensor_light"] = function () {
-      return [`wedo.getDistance()`, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-
-    Blockly.JavaScript["wedo_sensor_button"] = function () {
-      return [`wedo.getTilt()`, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-
-    Blockly.JavaScript["wedo_led_color"] = function (block: any) {
-      const color = block.getFieldValue("COLOR");
-      return `await wedo.setLedColor(${color});\n`;
-    };
+    const labels = getBlockLabels(language);
 
     // Toolbox XML
     const toolbox = `

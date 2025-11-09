@@ -6,9 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 
-import * as Blockly from 'blockly/core';
-import 'blockly/javascript';
-import 'blockly/blocks';
+import * as Blockly from 'blockly';
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;

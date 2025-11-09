@@ -656,7 +656,6 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
       <div
         ref={blocklyDiv}
         className="flex-1 bg-surface1 border border-dashed border-border1 rounded-lg overflow-hidden"
-        style={{ minHeight: "500px" }}
       />
     </div>
   );

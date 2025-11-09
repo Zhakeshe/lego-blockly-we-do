@@ -1,81 +1,158 @@
 import { useEffect, useRef, useState } from "react";
-import * as Blockly from "blockly/core";
-import "blockly/blocks";
-import "blockly/javascript";
-import { Button } from "@/components/ui/button";
 import { Play, Square, Save, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
+import * as Blockly from "blockly/core";
+import "blockly/blocks";
+import "blockly/javascript";
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;
 }
 
-// --- Multilingual block labels ---
-const getLabels = (lang: string) => {
-  if (lang === "kk") return {
-    motorOn: "қосу",
-    motorOff: "өшіру",
-    motor: "қозғалтқыш",
-    seconds: "секунд",
-    forward: "алға",
-    backward: "артқа",
-    ledColor: "шам түсін орнату",
-    distance: "қашықтық",
-    tilted: "еңкейгенде",
-    any: "кез келген"
-  };
-  if (lang === "ru") return {
-    motorOn: "включить",
-    motorOff: "выключить",
-    motor: "мотор",
-    seconds: "секунду",
-    forward: "вперед",
-    backward: "назад",
-    ledColor: "установить цвет лампочки",
-    distance: "расстояние",
-    tilted: "наклонен",
-    any: "любое"
-  };
-  return {
-    motorOn: "turn on",
-    motorOff: "turn off",
-    motor: "motor",
-    seconds: "seconds",
-    forward: "forward",
-    backward: "backward",
-    ledColor: "set LED color",
-    distance: "distance",
-    tilted: "tilted",
-    any: "any"
-  };
+// Flag to ensure blocks are defined only once
+let blocksDefined = false;
+
+// Multilingual block labels
+const getBlockLabels = (language: string) => {
+  if (language === "kk") {
+    return {
+      motorOn: "қосу",
+      motorOff: "өшіру",
+      motorPower: "қуат орнату",
+      motorDirection: "бағыт орнату",
+      motor: "қозғалтқыш",
+      on: "қосу",
+      seconds: "секунд",
+      setPower: "қуат орнату",
+      to: "дейін",
+      setDirection: "бағыт орнату",
+      forward: "алға",
+      backward: "артқа",
+      setLedColor: "шам түсін орнату",
+      whenDistance: "қашықтық болғанда",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "еңкейгенде",
+      any: "кез келген",
+      distance: "қашықтық",
+      tilted: "еңкейген",
+      tiltAngle: "еңкею бұрышы",
+    };
+  } else if (language === "ru") {
+    return {
+      motorOn: "включить",
+      motorOff: "выключить",
+      motorPower: "установить мощность",
+      motorDirection: "установить направление",
+      motor: "мотор",
+      on: "на",
+      seconds: "секунду",
+      setPower: "установить мощность",
+      to: "в",
+      setDirection: "установить направление",
+      forward: "сюда ⇾",
+      backward: "туда ⇽",
+      setLedColor: "установить цвет лампочки",
+      whenDistance: "когда расстояние",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "когда наклонен",
+      any: "любая",
+      distance: "расстояние",
+      tilted: "наклонен",
+      tiltAngle: "угол наклона",
+    };
+  } else {
+    return {
+      motorOn: "turn on",
+      motorOff: "turn off",
+      motorPower: "set motor power",
+      motorDirection: "set motor direction",
+      motor: "motor",
+      on: "for",
+      seconds: "seconds",
+      setPower: "set power",
+      to: "to",
+      setDirection: "set direction",
+      forward: "forward ⇾",
+      backward: "backward ⇽",
+      setLedColor: "set LED color",
+      whenDistance: "when distance",
+      lessThan: "<",
+      greaterThan: ">",
+      whenTilted: "when tilted",
+      any: "any",
+      distance: "distance",
+      tilted: "tilted",
+      tiltAngle: "tilt angle",
+    };
+  }
 };
 
-// --- Define blocks (function uses labels from current language) ---
-const defineBlocks = (labels: ReturnType<typeof getLabels>) => {
-  // Motor run
+// Define custom blocks and generators
+const defineCustomBlocks = (wedo: WeDoHook) => {
+  if (blocksDefined) return;
+  blocksDefined = true;
+
+  const labels = getBlockLabels("en"); // Default labels for block fields
+
+  // Motor Blocks
   Blockly.Blocks["wedo_motor_run"] = {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.motorOn)
-        .appendField(labels.motor)
+        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE")
+        .appendField(labels.on)
         .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
         .appendField(labels.seconds);
-      this.setPreviousStatement(true);
-      this.setNextStatement(true);
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
       this.setColour(65);
     },
   };
 
-  Blockly.Blocks["wedo_motor_stop"] = {
+  Blockly.Blocks["wedo_motor_reverse"] = {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.motorOff)
-        .appendField(labels.motor);
-      this.setPreviousStatement(true);
-      this.setNextStatement(true);
+        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_stop_brake"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setPower)
+        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE")
+        .appendField(labels.to)
+        .appendField(new Blockly.FieldNumber(100, 0, 100), "POWER");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+    },
+  };
+
+  Blockly.Blocks["wedo_motor_stop_coast"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setDirection)
+        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE")
+        .appendField(labels.to)
+        .appendField(
+          new Blockly.FieldDropdown([
+            [labels.forward, "forward"],
+            [labels.backward, "backward"],
+          ]),
+          "DIRECTION"
+        );
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
       this.setColour(65);
     },
   };
@@ -84,31 +161,22 @@ const defineBlocks = (labels: ReturnType<typeof getLabels>) => {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.motorOn)
-        .appendField(labels.motor)
+        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE")
+        .appendField(labels.on)
         .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
         .appendField(labels.seconds);
-      this.setPreviousStatement(true);
-      this.setNextStatement(true);
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
       this.setColour(65);
     },
   };
 
-  Blockly.Blocks["wedo_led_color"] = {
-    init: function () {
-      this.appendDummyInput()
-        .appendField(labels.ledColor)
-        .appendField(new Blockly.FieldNumber(50, 0, 100), "COLOR");
-      this.setPreviousStatement(true);
-      this.setNextStatement(true);
-      this.setColour(20);
-    },
-  };
-
-  // Sensors
+  // Sensor Blocks
   Blockly.Blocks["wedo_sensor_motion"] = {
     init: function () {
       this.appendDummyInput()
-        .appendField(labels.distance)
+        .appendField(labels.whenDistance)
+        .appendField(new Blockly.FieldDropdown([[labels.lessThan, "less"], [labels.greaterThan, "greater"]]), "OPERATOR")
         .appendField(new Blockly.FieldNumber(50, 0, 100), "VALUE");
       this.setOutput(true, "Boolean");
       this.setColour(175);
@@ -118,8 +186,8 @@ const defineBlocks = (labels: ReturnType<typeof getLabels>) => {
   Blockly.Blocks["wedo_sensor_tilt"] = {
     init: function () {
       this.appendDummyInput()
-        .appendField(labels.tilted)
-        .appendField(labels.any);
+        .appendField(labels.whenTilted)
+        .appendField(new Blockly.FieldDropdown([[labels.any, "any"]]), "DIRECTION");
       this.setOutput(true, "Boolean");
       this.setColour(175);
     },
@@ -137,161 +205,130 @@ const defineBlocks = (labels: ReturnType<typeof getLabels>) => {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.tilted)
-        .appendField(labels.any);
-      this.setOutput(true, "Boolean");
+        .appendField(new Blockly.FieldDropdown([[labels.any, "any"], ["?", "unknown"]]), "DIRECTION");
+      this.setOutput(true, "String");
       this.setColour(175);
     },
   };
 
-  // --- Generators ---
-  Blockly.JavaScript["wedo_motor_run"] = (block: any) => {
-    const seconds = block.getFieldValue("SECONDS");
-    return `await window.wedo.runMotorForSeconds(${seconds});\n`;
+  Blockly.Blocks["wedo_led_color"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.tiltAngle)
+        .appendField(new Blockly.FieldDropdown([[labels.forward, "up"], [labels.backward, "down"]]), "DIRECTION");
+      this.setOutput(true, "String");
+      this.setColour(20);
+    },
   };
-  Blockly.JavaScript["wedo_motor_stop"] = () => {
-    return `await window.wedo.stopMotorBrake();\n`;
-  };
-  Blockly.JavaScript["wedo_motor_for_seconds"] = (block: any) => {
-    const seconds = block.getFieldValue("SECONDS");
-    return `await window.wedo.runMotorForSeconds(${seconds});\n`;
-  };
-  Blockly.JavaScript["wedo_led_color"] = (block: any) => {
-    const color = block.getFieldValue("COLOR");
-    return `await window.wedo.setLedColor(${color});\n`;
-  };
-  Blockly.JavaScript["wedo_sensor_motion"] = () => {
-    return [`window.wedo.getMotion()`, Blockly.JavaScript.ORDER_ATOMIC];
-  };
-  Blockly.JavaScript["wedo_sensor_tilt"] = () => {
-    return [`window.wedo.getTilt()`, Blockly.JavaScript.ORDER_ATOMIC];
-  };
-  Blockly.JavaScript["wedo_sensor_light"] = () => {
-    return [`window.wedo.getDistance()`, Blockly.JavaScript.ORDER_ATOMIC];
-  };
-  Blockly.JavaScript["wedo_sensor_button"] = () => {
-    return [`window.wedo.getButton()`, Blockly.JavaScript.ORDER_ATOMIC];
-  };
+
+  // Generators
+  Blockly.JavaScript["wedo_motor_run"] = (block: any) => `await wedo.runMotor(100);\n`;
+  Blockly.JavaScript["wedo_motor_reverse"] = (block: any) => `await wedo.runMotorReverse(100);\n`;
+  Blockly.JavaScript["wedo_motor_stop_brake"] = () => `await wedo.stopMotorBrake();\n`;
+  Blockly.JavaScript["wedo_motor_stop_coast"] = () => `await wedo.stopMotorCoast();\n`;
+  Blockly.JavaScript["wedo_motor_for_seconds"] = (block: any) => `await wedo.runMotorForSeconds(100, 1);\n`;
+  Blockly.JavaScript["wedo_sensor_motion"] = () => ["wedo.getMotion()", Blockly.JavaScript.ORDER_ATOMIC];
+  Blockly.JavaScript["wedo_sensor_tilt"] = () => ["wedo.getTilt()", Blockly.JavaScript.ORDER_ATOMIC];
+  Blockly.JavaScript["wedo_sensor_light"] = () => ["wedo.getDistance()", Blockly.JavaScript.ORDER_ATOMIC];
+  Blockly.JavaScript["wedo_sensor_button"] = () => ["wedo.getTilt()", Blockly.JavaScript.ORDER_ATOMIC];
+  Blockly.JavaScript["wedo_led_color"] = (block: any) => `await wedo.setLedColor(50);\n`;
 };
 
-// --- BlocklyWorkspace component ---
 export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<any>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const { language, t } = useLanguage();
   const { theme } = useTheme();
-  const { language } = useLanguage();
 
-  // Make wedo global
+  // Define blocks once
   useEffect(() => {
-    window.wedo = wedo;
+    defineCustomBlocks(wedo);
   }, [wedo]);
 
-  // Define blocks when language changes
-  useEffect(() => {
-    defineBlocks(getLabels(language));
-    // Reload workspace if needed
-  }, [language]);
-
-  // Inject Blockly
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
+    const labels = getBlockLabels(language);
+
+    const toolbox = `
+      <xml style="display: none">
+        <category name="${t("blocks.motor")}" colour="65">
+          <block type="wedo_motor_run"></block>
+          <block type="wedo_motor_reverse"></block>
+          <block type="wedo_motor_stop_brake"></block>
+          <block type="wedo_motor_stop_coast"></block>
+          <block type="wedo_motor_for_seconds"></block>
+        </category>
+        <category name="${t("blocks.sensor")}" colour="175">
+          <block type="wedo_sensor_motion"></block>
+          <block type="wedo_sensor_tilt"></block>
+          <block type="wedo_sensor_light"></block>
+          <block type="wedo_sensor_button"></block>
+        </category>
+        <category name="${t("blocks.look")}" colour="20">
+          <block type="wedo_led_color"></block>
+        </category>
+        <category name="${t("blocks.control")}" colour="120">
+          <block type="controls_if"></block>
+          <block type="controls_repeat_ext">
+            <value name="TIMES"><shadow type="math_number"><field name="NUM">10</field></shadow></value>
+          </block>
+        </category>
+      </xml>
+    `;
+
     const workspace = Blockly.inject(blocklyDiv.current, {
-      toolbox: `
-        <xml>
-          <category name="Motor" colour="65">
-            <block type="wedo_motor_run"></block>
-            <block type="wedo_motor_stop"></block>
-            <block type="wedo_motor_for_seconds"></block>
-          </category>
-          <category name="LED" colour="20">
-            <block type="wedo_led_color"></block>
-          </category>
-          <category name="Sensors" colour="175">
-            <block type="wedo_sensor_motion"></block>
-            <block type="wedo_sensor_tilt"></block>
-            <block type="wedo_sensor_light"></block>
-            <block type="wedo_sensor_button"></block>
-          </category>
-          <category name="Logic" colour="210">
-            <block type="controls_if"></block>
-          </category>
-          <category name="Loops" colour="120">
-            <block type="controls_repeat_ext"></block>
-          </category>
-        </xml>
-      `,
+      toolbox,
+      grid: { spacing: 20, length: 3, colour: theme === "dark" ? "#1a1a1a" : "#e0e0e0", snap: true },
+      zoom: { controls: true, wheel: true, startScale: 1, maxScale: 3, minScale: 0.3 },
       trashcan: true,
-      grid: { spacing: 20, length: 3, snap: true },
-      zoom: { controls: true, wheel: true },
     });
 
     workspaceRef.current = workspace;
 
     return () => workspace.dispose();
-  }, []);
+  }, [language, theme]);
 
   const runCode = async () => {
     if (!workspaceRef.current) return;
     const code = Blockly.JavaScript.workspaceToCode(workspaceRef.current);
     try {
       setIsRunning(true);
-      await new Function(`return (async () => { ${code} })()`)();
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e.message || "Error running code");
+      // eslint-disable-next-line no-eval
+      await eval(`(async ()=>{${code}})()`);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsRunning(false);
     }
   };
 
-  const stopCode = () => toast("Stopped manually");
-
-  const saveWorkspace = () => {
-    if (!workspaceRef.current) return;
-    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
-    localStorage.setItem("wedo_workspace", Blockly.Xml.domToText(xml));
-    toast.success("Workspace saved");
-  };
-
-  const loadWorkspace = () => {
-    if (!workspaceRef.current) return;
-    const xmlText = localStorage.getItem("wedo_workspace");
-    if (!xmlText) return;
-    const xml = Blockly.Xml.textToDom(xmlText);
-    Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
-    toast.success("Workspace loaded");
+  const stopCode = () => {
+    setIsRunning(false);
   };
 
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <Button onClick={saveWorkspace} variant="outline" size="sm">
-            <Save className="w-4 h-4 mr-2" /> Save
+          <Button variant="outline" size="sm" onClick={() => console.log("Save clicked")}>
+            <Save className="w-4 h-4 mr-2" /> {t("control.save")}
           </Button>
-          <Button onClick={loadWorkspace} variant="outline" size="sm">
-            <FolderOpen className="w-4 h-4 mr-2" /> Load
+          <Button variant="outline" size="sm" onClick={() => console.log("Load clicked")}>
+            <FolderOpen className="w-4 h-4 mr-2" /> {t("control.load")}
           </Button>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={runCode}
-            disabled={isRunning}
-            className="bg-success hover:bg-success/90 text-white"
-          >
-            <Play className="w-4 h-4 mr-2" /> Run
+          <Button onClick={runCode} disabled={isRunning} className="bg-success hover:bg-success/90 text-white">
+            <Play className="w-4 h-4 mr-2" /> {t("control.run")}
           </Button>
           <Button onClick={stopCode} disabled={!isRunning} variant="destructive">
-            <Square className="w-4 h-4 mr-2" /> Stop
+            <Square className="w-4 h-4 mr-2" /> {t("control.stop")}
           </Button>
         </div>
       </div>
-      <div
-        ref={blocklyDiv}
-        className="flex-1 bg-surface1 border border-dashed border-border1 rounded-lg overflow-hidden"
-        style={{ minHeight: "500px" }}
-      />
+      <div ref={blocklyDiv} className="flex-1 bg-surface1 border border-dashed border-border1 rounded-lg overflow-hidden" style={{ minHeight: "500px" }} />
     </div>
   );
 };

@@ -100,10 +100,6 @@ export const useWeDo = (): WeDoHook => {
   // MOTOR COMMAND FOR M_SMARTCAR
   // channel = 01
   const runMotor = async (speed: number) => {
-    if (status !== "Connected") {
-      log("⚠️ Motor command ignored - not connected", "warn");
-      return;
-    }
     const s = Math.max(-100, Math.min(100, speed));
     const raw = Math.round((s / 100) * 127);
 
@@ -115,20 +111,12 @@ export const useWeDo = (): WeDoHook => {
   };
 
   const stopMotor = async () => {
-    if (status !== "Connected") {
-      log("⚠️ Stop command ignored - not connected", "warn");
-      return;
-    }
     await runMotor(0);
   };
 
   // LED (LPF2 discrete mode)
   // channel 06
   const setHubLed = async (colorIndex: number) => {
-    if (status !== "Connected") {
-      log("⚠️ LED command ignored - not connected", "warn");
-      return;
-    }
     const frame = new Uint8Array([
       0x04, 0x06, 0x04, 0x01, colorIndex
     ]);

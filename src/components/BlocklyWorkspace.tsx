@@ -25,10 +25,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   useEffect(() => {
     const checkBlockly = () => {
       if (typeof window !== 'undefined' && (window as any).Blockly) {
-        console.log("✅ Blockly loaded successfully");
         setBlocklyLoaded(true);
-      } else {
-        console.log("⏳ Waiting for Blockly...");
       }
     };
     
@@ -41,18 +38,10 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   }, [blocklyLoaded]);
 
   useEffect(() => {
-    if (!blocklyDiv.current || !blocklyLoaded) {
-      console.log("❌ Blockly not ready:", { div: !!blocklyDiv.current, loaded: blocklyLoaded });
-      return;
-    }
+    if (!blocklyDiv.current || !blocklyLoaded) return;
     
     const Blockly = (window as any).Blockly;
-    if (!Blockly) {
-      console.log("❌ Blockly not found on window");
-      return;
-    }
-    
-    console.log("🚀 Initializing Blockly workspace...");
+    if (!Blockly) return;
 
     // Multilingual block labels
     const getBlockLabels = () => {
@@ -495,7 +484,6 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     });
 
     workspaceRef.current = workspace;
-    console.log("✅ Blockly workspace created successfully", workspace);
 
     return () => {
       if (workspace) {
@@ -552,9 +540,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const stopCode = async () => {
     stopRequestedRef.current = true;
     setIsRunning(false);
-    if (wedo.status === "Connected") {
-      await wedo.stopMotor();
-    }
+    await wedo.stopMotorBrake();
     toast.info(t("info.programStopped"));
   };
 

@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
-import * as Blockly from "blockly/core";
-import "blockly/blocks";
-import "blockly/javascript";
+import * as Blockly from 'blockly/browser';
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;

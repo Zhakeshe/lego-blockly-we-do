@@ -80,7 +80,9 @@ const Projects = () => {
     saveProjects(updatedProjects);
     setNewProjectName("");
     setShowNewDialog(false);
-    toast.success(t("success.saved"));
+    
+    // Automatically open the new project
+    openProject(newProject);
   };
 
   const deleteProject = (id: string) => {
@@ -104,7 +106,8 @@ const Projects = () => {
     } else {
       localStorage.removeItem("wedo_workspace");
     }
-    navigate("/");
+    // Navigate to the new Editor page with project ID
+    navigate(`/editor/${project.id}`);
     toast.success(t("success.loaded"));
   };
 

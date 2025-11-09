@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import Visual from "./pages/Visual";
 import Constructor from "./pages/Constructor";
+import ProjectEditor from "./pages/ProjectEditor"; // New Editor Page
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/editor/:projectId" element={<ProjectEditor />} /> {/* New Editor Route */}
             <Route path="/visual" element={<Visual />} />
             <Route path="/constructor" element={<Constructor />} />
             <Route path="*" element={<NotFound />} />

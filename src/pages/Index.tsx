@@ -1,56 +1,59 @@
-import { useState, useEffect } from "react";
-import { BlocklyWorkspace } from "@/components/BlocklyWorkspace";
-import { ControlPanel } from "@/components/ControlPanel";
-import { TelemetryPanel } from "@/components/TelemetryPanel";
-import { ConsoleLog } from "@/components/ConsoleLog";
-import { useWeDo } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Blocks, Construction, LayoutGrid } from "lucide-react";
+
 const Index = () => {
-  const wedo = useWeDo();
   const { t } = useLanguage();
-  const [logs, setLogs] = useState<Array<{
-    timestamp: Date;
-    message: string;
-    type: "info" | "error" | "success" | "command";
-  }>>([]);
-  useEffect(() => {
-    wedo.setLogCallback((message: string, type: "info" | "error" | "success" | "command") => {
-      setLogs(prev => [...prev, {
-        timestamp: new Date(),
-        message,
-        type
-      }]);
-    });
-  }, [wedo]);
-  return <div className="relative bg-bg">
-      <div className="site-content relative z-10">
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-text1">{t("app.title")}</h1>
-              <p className="text-sm text-text3 mt-1">{t("app.subtitle")}</p>
-            </div>
-            <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${wedo.status === "Connected" ? "bg-success/10 border-success/30 text-success" : wedo.status === "Connecting" ? "bg-warning/10 border-warning/30 text-warning animate-pulse-glow" : "bg-border2 border-border1 text-text4"}`}>
-              {t(`status.${wedo.status.toLowerCase()}`)}
-            </span>
-          </div>
 
-          <div className="grid lg:grid-cols-[1fr,400px] gap-6 h-[calc(100vh-180px)]">
-            {/* Left: Blockly Workspace */}
-            <div className="flex flex-col gap-4">
-              <BlocklyWorkspace wedo={wedo} />
-            </div>
+  return (
+    <div className="min-h-screen bg-bg p-6">
+      <div className="container mx-auto">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-bold text-text1">{t("app.title")}</h1>
+          <p className="text-xl text-text3 mt-2">{t("app.subtitle")}</p>
+        </div>
 
-            {/* Right: Control Panel */}
-            <div className="flex flex-col gap-4">
-              <ControlPanel wedo={wedo} />
-              <TelemetryPanel wedo={wedo} />
-              <ConsoleLog logs={logs} />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <Link to="/projects">
+            <Card className="hover:border-primary transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-medium">{t("menu.projects")}</CardTitle>
+                <LayoutGrid className="h-6 w-6 text-text3" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text3">{t("menu.projects.description") || "Жобаларыңызды басқарыңыз және өңдеңіз."}</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/editor">
+            <Card className="hover:border-primary transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-medium">{t("menu.editor") || "Визуалды Редактор"}</CardTitle>
+                <Blocks className="h-6 w-6 text-text3" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text3">{t("menu.editor.description") || "Жаңа бағдарламаны бірден бастаңыз."}</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/constructor">
+            <Card className="hover:border-primary transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-medium">{t("menu.constructor")}</CardTitle>
+                <Construction className="h-6 w-6 text-text3" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text3">{t("menu.constructor.description") || "Робот моделін құрастыру."}</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;

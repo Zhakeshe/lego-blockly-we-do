@@ -291,19 +291,20 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   }, [language, theme]);
 
   const runCode = async () => {
-    if (!workspaceRef.current) return;
-    const code = Blockly.JavaScript.workspaceToCode(workspaceRef.current);
-    try {
-      setIsRunning(true);
-      // eslint-disable-next-line no-eval
-      await eval(`(async ()=>{${code}})()`);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
+  if (!workspaceRef.current) return;
+  const code = Blockly.JavaScript.workspaceToCode(workspaceRef.current);
+  try {
+    setIsRunning(true);
+    const context = { wedo }; // 👈 создаем контекст
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    const fn = new AsyncFunction("wedo", code);
+    await fn(context.wedo); // 👈 передаем внутрь eval wedo
+  } catch (err) {
+    console.error("Error executing Blockly code:", err);
+  } finally {
+    setIsRunning(false);
+  }
+};
   const stopCode = () => {
     setIsRunning(false);
   };

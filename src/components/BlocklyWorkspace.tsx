@@ -91,10 +91,7 @@ const getBlockLabels = (language: string) => {
 };
 
 // Define custom blocks and generators
-const defineCustomBlocks = (wedo: WeDoHook) => {
-  if (blocksDefined) return;
-  blocksDefined = true;
-
+const defineCustomBlocks = () => {
   const labels = getBlockLabels("en"); // Default labels for block fields
 
   // Motor Blocks
@@ -231,6 +228,12 @@ const defineCustomBlocks = (wedo: WeDoHook) => {
   Blockly.JavaScript["wedo_sensor_button"] = () => ["wedo.getTilt()", Blockly.JavaScript.ORDER_ATOMIC];
   Blockly.JavaScript["wedo_led_color"] = (block: any) => `await wedo.setLedColor(50);\n`;
 };
+
+
+
+
+
+defineCustomBlocks();
 
 export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);

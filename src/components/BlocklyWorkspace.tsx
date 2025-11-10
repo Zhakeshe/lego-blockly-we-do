@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
-import * as Blockly from "blockly/browser";
-import "blockly/javascript"; // 👈 важно! добавляет Blockly.JavaScript
+import * as Blockly from "blockly";
+import { javascriptGenerator } from "blockly/javascript";
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;
@@ -102,7 +102,7 @@ const defineCustomBlocks = () => {
   };
 
   // --- Генераторы JS ---
-  Blockly.JavaScript["wedo_motor_run"] = (block: any) => {
+  javascriptGenerator.forBlock["wedo_motor_run"] = (block: any) => {
     const seconds = block.getFieldValue("SECONDS");
     return `
       await wedo.runMotor(100);
@@ -111,8 +111,8 @@ const defineCustomBlocks = () => {
     `;
   };
 
-  Blockly.JavaScript["wedo_motor_stop"] = function () {
-    return `await wedo.stopMotorBrake();\n`;
+  javascriptGenerator.forBlock["wedo_motor_stop"] = function () {
+    return `await wedo.stopMotor();\n`;
   };
 
 };
@@ -161,11 +161,12 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
   const runCode = async () => {
     if (!workspaceRef.current) return;
-    const code = Blockly.JavaScript.workspaceToCode(workspaceRef.current);
+    const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
     try {
       setIsRunning(true);
       // eslint-disable-next-line no-eval
-      await eval((async () => { ${code} })());
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      await new AsyncFunction('wedo', code)(wedo);
     } catch (err) {
       console.error("Error running code:", err);
     } finally {

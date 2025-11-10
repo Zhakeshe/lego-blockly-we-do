@@ -7,6 +7,7 @@ export interface TelemetryData {
   tilt: string;
   light: number;
   hubButton: boolean;
+  battery: number;
   ledColor: string;
 }
 
@@ -21,47 +22,50 @@ export interface WeDoHook {
   setLogCallback: (callback: (m: string, t: any) => void) => void;
 }
 
-// === M_SmartCar / LPF2 UUIDs ===
+// SMARTCAR CLONE UUID
 const SERVICE_UUID = "00004f0e-1212-efde-1523-785feabcd123";
-const OUTPUT_UUID  = "00001565-1212-efde-1523-785feabcd123"; // motor + rgb
-const INPUT_UUID   = "00001563-1212-efde-1523-785feabcd123"; // modes
-const SENSOR_UUID  = "00001560-1212-efde-1523-785feabcd123"; // notifications
+const OUTPUT_UUID  = "00001565-1212-efde-1523-785feabcd123";
+const SENSOR_UUID  = "00001560-1212-efde-1523-785feabcd123";
 
 export const useWeDo = (): WeDoHook => {
   const [status, setStatus] = useState<ConnectionStatus>("Disconnected");
+
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     motion: 0,
     tilt: "none",
     light: 0,
     hubButton: false,
+    battery: 0,
     ledColor: "off",
   });
 
   const deviceRef = useRef<any>(null);
   const serverRef = useRef<any>(null);
-  const outputCharRef = useRef<any>(null);
-  const sensorCharRef = useRef<any>(null);
-  const logCallbackRef = useRef<any>(null);
+  const outputRef = useRef<any>(null);
+  const sensorRef = useRef<any>(null);
+  const logRef = useRef<any>(null);
+
+  const hex = (arr: Uint8Array) =>
+    [...arr].map(x => x.toString(16).padStart(2, "0")).join(" ");
 
   const log = (msg: string, type: any = "info") => {
     console.log(msg);
-    if (logCallbackRef.current) logCallbackRef.current(msg, type);
+    logRef.current && logRef.current(msg, type);
   };
 
-  const hex = (arr: Uint8Array) => [...arr].map(x => x.toString(16).padStart(2,"0")).join(" ");
-
-  // MOTOR WRITE (LPF2 protocol)
   const writeOutput = async (bytes: Uint8Array) => {
-    if (!outputCharRef.current) throw new Error("Output char missing");
-    log("→ " + hex(bytes), "command");
-    await outputCharRef.current.writeValue(bytes);
+    log("→ " + hex(bytes), "cmd");
+    await outputRef.current.writeValue(bytes);
   };
 
-  const handleNotification = (event: any) => {
-    const v = new Uint8Array(event.target.value.buffer);
+  const handleNotify = (ev: any) => {
+    const v = new Uint8Array(ev.target.value.buffer);
     log("← " + hex(v), "notify");
 
-    // telemetry not implemented yet for SmartCar clone
+    // battery: 06 04 XX
+    if (v.length === 3 && v[0] === 0x06 && v[1] === 0x04) {
+      setTelemetry(prev => ({ ...prev, battery: v[2] }));
+    }
   };
 
   const connect = useCallback(async () => {
@@ -69,7 +73,7 @@ export const useWeDo = (): WeDoHook => {
 
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: [SERVICE_UUID]
+      optionalServices: [SERVICE_UUID],
     });
 
     deviceRef.current = device;
@@ -77,14 +81,11 @@ export const useWeDo = (): WeDoHook => {
     serverRef.current = server;
 
     const service = await server.getPrimaryService(SERVICE_UUID);
+    outputRef.current = await service.getCharacteristic(OUTPUT_UUID);
 
-    // output: motors, LEDs
-    outputCharRef.current = await service.getCharacteristic(OUTPUT_UUID);
-
-    // sensor notifications
-    sensorCharRef.current = await service.getCharacteristic(SENSOR_UUID);
-    await sensorCharRef.current.startNotifications();
-    sensorCharRef.current.addEventListener("characteristicvaluechanged", handleNotification);
+    sensorRef.current = await service.getCharacteristic(SENSOR_UUID);
+    await sensorRef.current.startNotifications();
+    sensorRef.current.addEventListener("characteristicvaluechanged", handleNotify);
 
     log("Connected");
     setStatus("Connected");
@@ -92,20 +93,21 @@ export const useWeDo = (): WeDoHook => {
 
   const disconnect = async () => {
     try {
-      await deviceRef.current?.gatt?.disconnect();
+      await deviceRef.current?.gatt.disconnect();
     } catch {}
     setStatus("Disconnected");
   };
 
-  // MOTOR COMMAND FOR M_SMARTCAR
-  // channel = 01
+  // ✅ MOTOR — LPF2 smart motor format (клондарға жұмыс істейді)
   const runMotor = async (speed: number) => {
     const s = Math.max(-100, Math.min(100, speed));
-    const raw = Math.round((s / 100) * 127);
+    const val = Math.round((s / 100) * 127);
 
-    // LPF2 motor frame:
-    // 04 01 01 01 XX
-    const frame = new Uint8Array([0x04, 0x01, 0x01, 0x01, raw & 0xff]);
+    const frame = new Uint8Array([
+      0x08, 0x00, 0x81, 0x00,
+      0x11, 0x51, 0x00,
+      val & 0xff,
+    ]);
 
     await writeOutput(frame);
   };
@@ -114,18 +116,14 @@ export const useWeDo = (): WeDoHook => {
     await runMotor(0);
   };
 
-  // LED (LPF2 discrete mode)
-  // channel 06
-  const setHubLed = async (colorIndex: number) => {
-    const frame = new Uint8Array([
-      0x04, 0x06, 0x04, 0x01, colorIndex
-    ]);
+  // ✅ LED — discrete mode
+  const setHubLed = async (color: number) => {
+    const frame = new Uint8Array([0x04, 0x06, 0x04, 0x01, color]);
     await writeOutput(frame);
+    setTelemetry(prev => ({ ...prev, ledColor: String(color) }));
   };
 
-  const setLogCallback = (cb: any) => {
-    logCallbackRef.current = cb;
-  };
+  const setLogCallback = (cb: any) => (logRef.current = cb);
 
   return {
     status,
@@ -138,3 +136,4 @@ export const useWeDo = (): WeDoHook => {
     setLogCallback,
   };
 };
+

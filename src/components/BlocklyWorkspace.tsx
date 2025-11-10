@@ -69,52 +69,104 @@ const getBlockLabels = (language: string) => {
 };
 
 // === Определение блоков и генераторов ===
-const defineCustomBlocks = () => {
+const defineCustomBlocks = (language: string) => {
   if (blocksDefined) return;
   blocksDefined = true;
 
-  const labels = getBlockLabels("en");
+  const labels = getBlockLabels(language);
 
-  // --- Блоки мотора ---
+  // --- Блок включения мотора ---
   Blockly.Blocks["wedo_motor_run"] = {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.motorOn)
-        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE")
+        .appendField(labels.motor)
         .appendField(labels.on)
         .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
         .appendField(labels.seconds);
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(65);
+      this.setColour(120);
+      this.setTooltip("");
+      this.setHelpUrl("");
     },
   };
 
+  // --- Блок остановки мотора ---
   Blockly.Blocks["wedo_motor_stop"] = {
     init: function () {
       this.appendDummyInput()
         .appendField(labels.motorOff)
-        .appendField(new Blockly.FieldDropdown([[labels.motor, "motor"]]), "TYPE");
+        .appendField(labels.motor);
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(65);
+      this.setColour(120);
+      this.setTooltip("");
+      this.setHelpUrl("");
+    },
+  };
+
+  // --- Блок установки направления ---
+  Blockly.Blocks["wedo_motor_direction"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setDirection)
+        .appendField(new Blockly.FieldDropdown([
+          [labels.forward, "100"],
+          [labels.backward, "-100"]
+        ]), "DIRECTION");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(120);
+      this.setTooltip("");
+      this.setHelpUrl("");
+    },
+  };
+
+  // --- Блок установки цвета LED ---
+  Blockly.Blocks["wedo_set_led"] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField(labels.setLedColor)
+        .appendField(new Blockly.FieldDropdown([
+          ["🔴 " + (language === "kk" ? "қызыл" : language === "ru" ? "красный" : "red"), "9"],
+          ["🟢 " + (language === "kk" ? "жасыл" : language === "ru" ? "зелёный" : "green"), "7"],
+          ["🔵 " + (language === "kk" ? "көк" : language === "ru" ? "синий" : "blue"), "3"],
+          ["🟡 " + (language === "kk" ? "сары" : language === "ru" ? "жёлтый" : "yellow"), "8"],
+          ["🟣 " + (language === "kk" ? "күлгін" : language === "ru" ? "фиолетовый" : "purple"), "5"],
+          ["⚪ " + (language === "kk" ? "ақ" : language === "ru" ? "белый" : "white"), "10"],
+          ["⚫ " + (language === "kk" ? "өшіру" : language === "ru" ? "выключить" : "off"), "0"]
+        ]), "COLOR");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(45);
+      this.setTooltip("");
+      this.setHelpUrl("");
     },
   };
 
   // --- Генераторы JS ---
   javascriptGenerator.forBlock["wedo_motor_run"] = (block: any) => {
     const seconds = block.getFieldValue("SECONDS");
-    return `
-      await wedo.runMotor(100);
-      await new Promise(r => setTimeout(r, ${seconds * 1000}));
-      await wedo.stopMotor();
-    `;
+    return `await wedo.runMotor(100);
+await new Promise(r => setTimeout(r, ${seconds * 1000}));
+await wedo.stopMotor();
+`;
   };
 
-  javascriptGenerator.forBlock["wedo_motor_stop"] = function () {
+  javascriptGenerator.forBlock["wedo_motor_stop"] = () => {
     return `await wedo.stopMotor();\n`;
   };
 
+  javascriptGenerator.forBlock["wedo_motor_direction"] = (block: any) => {
+    const direction = block.getFieldValue("DIRECTION");
+    return `await wedo.runMotor(${direction});\n`;
+  };
+
+  javascriptGenerator.forBlock["wedo_set_led"] = (block: any) => {
+    const color = block.getFieldValue("COLOR");
+    return `await wedo.setHubLed(${color});\n`;
+  };
 };
 
 // === Компонент ===
@@ -127,8 +179,8 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
   // Определяем блоки один раз
   useEffect(() => {
-    defineCustomBlocks();
-  }, []);
+    defineCustomBlocks(language);
+  }, [language]);
 
   // Инициализация Blockly
   useEffect(() => {
@@ -136,9 +188,13 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     const toolbox = `
       <xml style="display:none">
-        <category name="${t("blocks.motor")}" colour="65">
+        <category name="${t("blocks.motor")}" colour="120">
           <block type="wedo_motor_run"></block>
           <block type="wedo_motor_stop"></block>
+          <block type="wedo_motor_direction"></block>
+        </category>
+        <category name="${language === "kk" ? "LED шам" : language === "ru" ? "LED лампа" : "LED Light"}" colour="45">
+          <block type="wedo_set_led"></block>
         </category>
       </xml>
     `;

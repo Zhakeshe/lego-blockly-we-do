@@ -16,8 +16,15 @@ export interface WeDoHook {
   telemetry: TelemetryData;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  
+  // Бір мотор (бұрынғы)
   runMotor: (speed: number) => Promise<void>;
   stopMotor: () => Promise<void>;
+  
+  // Екі мотор (жаңа)
+  setMotorA: (speed: number) => Promise<void>;
+  setMotorB: (speed: number) => Promise<void>;
+  
   setHubLed: (color: number) => Promise<void>;
   setLogCallback: (callback: (m: string, t: any) => void) => void;
 }
@@ -29,7 +36,6 @@ const SENSOR_UUID  = "00001560-1212-efde-1523-785feabcd123";
 
 export const useWeDo = (): WeDoHook => {
   const [status, setStatus] = useState<ConnectionStatus>("Disconnected");
-
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     motion: 0,
     tilt: "none",
@@ -54,6 +60,10 @@ export const useWeDo = (): WeDoHook => {
   };
 
   const writeOutput = async (bytes: Uint8Array) => {
+    if (!outputRef.current) {
+      console.error("Output characteristic жоқ!");
+      return;
+    }
     log("→ " + hex(bytes), "cmd");
     await outputRef.current.writeValue(bytes);
   };
@@ -61,7 +71,7 @@ export const useWeDo = (): WeDoHook => {
   const handleNotify = (ev: any) => {
     const v = new Uint8Array(ev.target.value.buffer);
     log("← " + hex(v), "notify");
-
+    
     // battery: 06 04 XX
     if (v.length === 3 && v[0] === 0x06 && v[1] === 0x04) {
       setTelemetry(prev => ({ ...prev, battery: v[2] }));
@@ -70,24 +80,23 @@ export const useWeDo = (): WeDoHook => {
 
   const connect = useCallback(async () => {
     setStatus("Connecting");
-
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: [SERVICE_UUID],
     });
-
     deviceRef.current = device;
+    
     const server = await device.gatt!.connect();
     serverRef.current = server;
-
+    
     const service = await server.getPrimaryService(SERVICE_UUID);
     outputRef.current = await service.getCharacteristic(OUTPUT_UUID);
-
     sensorRef.current = await service.getCharacteristic(SENSOR_UUID);
+    
     await sensorRef.current.startNotifications();
     sensorRef.current.addEventListener("characteristicvaluechanged", handleNotify);
-
-    log("Connected");
+    
+    log("✅ Connected");
     setStatus("Connected");
   }, []);
 
@@ -98,22 +107,38 @@ export const useWeDo = (): WeDoHook => {
     setStatus("Disconnected");
   };
 
-  // ✅ MOTOR — LPF2 smart motor format (клондарға жұмыс істейді)
-  const runMotor = async (speed: number) => {
+  // ✅ МОТОР А (порт 0x00)
+  const setMotorA = async (speed: number) => {
     const s = Math.max(-100, Math.min(100, speed));
     const val = Math.round((s / 100) * 127);
-
     const frame = new Uint8Array([
-      0x08, 0x00, 0x81, 0x00,
-      0x11, 0x51, 0x00,
-      val & 0xff,
+      0x08, 0x00, 0x81, 0x00,  // Header
+      0x11, 0x51, 0x00,         // Command, port A
+      val & 0xff,               // Speed value
     ]);
-
     await writeOutput(frame);
   };
 
+  // ✅ МОТОР B (порт 0x01)
+  const setMotorB = async (speed: number) => {
+    const s = Math.max(-100, Math.min(100, speed));
+    const val = Math.round((s / 100) * 127);
+    const frame = new Uint8Array([
+      0x08, 0x00, 0x81, 0x01,  // Header, port B
+      0x11, 0x51, 0x00,         // Command
+      val & 0xff,               // Speed value
+    ]);
+    await writeOutput(frame);
+  };
+
+  // Бұрынғы функция (backward compatibility)
+  const runMotor = async (speed: number) => {
+    await setMotorA(speed);
+  };
+
   const stopMotor = async () => {
-    await runMotor(0);
+    await setMotorA(0);
+    await setMotorB(0);
   };
 
   // ✅ LED — discrete mode
@@ -132,8 +157,9 @@ export const useWeDo = (): WeDoHook => {
     disconnect,
     runMotor,
     stopMotor,
+    setMotorA,
+    setMotorB,
     setHubLed,
     setLogCallback,
   };
 };
-

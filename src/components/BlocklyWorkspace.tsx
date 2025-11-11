@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Square, Save, FolderOpen } from "lucide-react";
+import { Play, Square, Save, FolderOpen, Search, TestTube, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
@@ -60,58 +61,76 @@ const defineBlocks = () => {
   if (blocksInitialized) return;
   blocksInitialized = true;
 
-  // Мотор включить на время
-  Blockly.Blocks["wedo_motor_run"] = {
+  // 🚀 СТАРТ БЛОГЫ
+  Blockly.Blocks["wedo_start"] = {
+    init() {
+      this.appendDummyInput().appendField("🚀 Бағдарлама басталғанда");
+      this.appendStatementInput("STACK");
+      this.setColour(0);
+      this.setDeletable(false);
+      this.setMovable(true);
+    },
+  };
+
+  // 🚗 Мотор A
+  Blockly.Blocks["wedo_motor_a"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_TURN_MOTOR_FOR}")
-        .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
-        .appendField("%{BKY_WEDO_SECONDS}");
+        .appendField("🚗 Мотор A жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
       this.setColour(120);
     },
   };
 
-  // Мотор стоп
+  // 🚗 Мотор B
+  Blockly.Blocks["wedo_motor_b"] = {
+    init() {
+      this.appendDummyInput()
+        .appendField("🚗 Мотор B жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED");
+      this.setPreviousStatement(true);
+      this.setNextStatement(true);
+      this.setColour(120);
+    },
+  };
+
+  // ⏹️ Моторды тоқтату
   Blockly.Blocks["wedo_motor_stop"] = {
     init() {
-      this.appendDummyInput().appendField("%{BKY_WEDO_TURN_MOTOR_OFF}");
+      this.appendDummyInput().appendField("⏹️ Моторды тоқтату");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
       this.setColour(120);
     },
   };
 
-  // Направление
-  Blockly.Blocks["wedo_motor_direction"] = {
+  // ⏱️ Күту
+  Blockly.Blocks["wedo_wait"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_DIRECTION}")
-        .appendField(
-          new Blockly.FieldDropdown([
-            ["%{BKY_WEDO_FORWARD}", "100"],
-            ["%{BKY_WEDO_BACKWARD}", "-100"],
-          ]),
-          "DIR"
-        );
+        .appendField("⏱️ Күту")
+        .appendField(new Blockly.FieldNumber(1, 0, 10, 0.1), "SECONDS")
+        .appendField("секунд");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
-      this.setColour(120);
+      this.setColour(290);
     },
   };
 
-  // Цвет LED
+  // 💡 LED
   Blockly.Blocks["wedo_led"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_LED}")
+        .appendField("💡 LED түсі")
         .appendField(
           new Blockly.FieldDropdown([
-            ["🔴 red", "9"],
-            ["🟢 green", "7"],
-            ["🔵 blue", "3"],
-            ["⚫ off", "0"],
+            ["🔴 Қызыл", "9"],
+            ["🟢 Жасыл", "7"],
+            ["🔵 Көк", "3"],
+            ["🟡 Сары", "8"],
+            ["⚫ Өшіру", "0"],
           ]),
           "COLOR"
         );
@@ -123,20 +142,28 @@ const defineBlocks = () => {
 
   // === Генераторы ===
 
-  javascriptGenerator.forBlock["wedo_motor_run"] = (block) => {
-    const sec = block.getFieldValue("SECONDS");
-    return `await wedo.runMotor(100);
-await new Promise(r => setTimeout(r, ${sec * 1000}));
-await wedo.stopMotor();\n`;
+  javascriptGenerator.forBlock["wedo_start"] = (block, generator) => {
+    const stack = generator.statementToCode(block, "STACK");
+    return stack;
+  };
+
+  javascriptGenerator.forBlock["wedo_motor_a"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    return `await wedo.setMotorA(${speed});\n`;
+  };
+
+  javascriptGenerator.forBlock["wedo_motor_b"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    return `await wedo.setMotorB(${speed});\n`;
   };
 
   javascriptGenerator.forBlock["wedo_motor_stop"] = () => {
     return `await wedo.stopMotor();\n`;
   };
 
-  javascriptGenerator.forBlock["wedo_motor_direction"] = (block) => {
-    const dir = block.getFieldValue("DIR");
-    return `await wedo.runMotor(${dir});\n`;
+  javascriptGenerator.forBlock["wedo_wait"] = (block) => {
+    const sec = block.getFieldValue("SECONDS");
+    return `await new Promise(r => setTimeout(r, ${sec * 1000}));\n`;
   };
 
   javascriptGenerator.forBlock["wedo_led"] = (block) => {
@@ -150,6 +177,8 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const blocklyRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [running, setRunning] = useState(false);
+  const [hexInput, setHexInput] = useState("");
+  const [showDiagnostics, setShowDiagnostics] = useState(true); // Әдепкі ашық
   const { language, t } = useLanguage();
   const { theme } = useTheme();
 
@@ -176,14 +205,22 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     const toolboxXml = `
       <xml>
-        <category name="${t("blocks.motor")}" colour="120">
-          <block type="wedo_motor_run"></block>
-          <block type="wedo_motor_stop"></block>
-          <block type="wedo_motor_direction"></block>
+        <category name="🚀 Басталу" colour="0">
+          <block type="wedo_start"></block>
         </category>
 
-        <category name="${t("blocks.led")}" colour="45">
+        <category name="🚗 Моторлар" colour="120">
+          <block type="wedo_motor_a"></block>
+          <block type="wedo_motor_b"></block>
+          <block type="wedo_motor_stop"></block>
+        </category>
+
+        <category name="💡 LED" colour="45">
           <block type="wedo_led"></block>
+        </category>
+
+        <category name="⏱️ Күту" colour="290">
+          <block type="wedo_wait"></block>
         </category>
       </xml>
     `;
@@ -202,24 +239,88 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     workspaceRef.current = workspace;
 
+    // Старый workspace-ті тазалау (ескі блоктар проблема тудыруы мүмкін)
+    workspace.clear();
+
+    // Автоматты түрде старт блогын қосу
+    const startBlock = workspace.newBlock("wedo_start");
+    startBlock.initSvg();
+    startBlock.render();
+    startBlock.moveBy(50, 50);
+
     return () => workspace.dispose();
   }, [language, theme, t]);
 
   const run = async () => {
     if (!workspaceRef.current) return;
+
+    console.log("🚀 Бағдарлама басталды");
+
+    if (wedo.status !== "Connected") {
+      console.error("⚠️ WeDo қосылмаған!");
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+
     const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
+    console.log("📝 Генерацияланған код:\n", code);
+
+    if (!code.trim()) {
+      console.warn("⚠️ Бос бағдарлама!");
+      alert("⚠️ Блоктарды қосыңыз!");
+      return;
+    }
 
     setRunning(true);
     try {
       const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
       await new AsyncFunction("wedo", code)(wedo);
+      console.log("✅ Бағдарлама аяқталды");
+    } catch (e) {
+      console.error("❌ Қате:", e);
     } finally {
       setRunning(false);
     }
   };
 
+  const testMotorProtocols = async () => {
+    if (wedo.status !== "Connected") {
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+    console.clear();
+    console.log("🧪 20+ ПРОТОКОЛ ТЕСТІЛЕНЕДІ");
+    console.log("⚠️ НАЗАР АУДАРЫҢЫЗ: Моторды қараңыз - қайсысы қозғалады!\n");
+    await wedo.testMotor();
+  };
+
+  const scanDeviceInfo = async () => {
+    if (wedo.status !== "Connected") {
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+    console.clear();
+    console.log("🔍 ҚҰРЫЛҒЫНЫ СКАНЕРЛЕУ");
+    console.log("📡 Барлық Bluetooth характеристикалары тексеріледі\n");
+    await wedo.scanDevice();
+  };
+
+  const sendCustomCommand = async () => {
+    if (wedo.status !== "Connected") {
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+    if (!hexInput.trim()) {
+      alert("⚠️ Hex команда енгізіңіз! Мысал: 08 00 81 00 11 51 00 3f");
+      return;
+    }
+    console.log(`\n📝 Custom команда жіберілуде: ${hexInput}`);
+    await wedo.sendCustomHex(hexInput);
+  };
+
   return (
     <div className="flex flex-col h-full gap-4">
+      {/* Басқару батырмалары */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -231,7 +332,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={run} disabled={running} className="bg-green-600 text-white">
+          <Button onClick={run} disabled={running || wedo.status !== "Connected"} className="bg-green-600 text-white">
             <Play className="w-4 h-4 mr-2" /> {t("control.run")}
           </Button>
           <Button disabled={!running} variant="destructive">
@@ -240,6 +341,80 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         </div>
       </div>
 
+      {/* ДИАГНОСТИКА БАТЫРМАЛАРЫ - Үстінде */}
+      {wedo.status === "Connected" && (
+        <div className="flex gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-400 rounded-lg">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
+              🔬 ПРОТОКОЛ ТАБУ (Console ашыңыз: F12)
+            </p>
+            <p className="text-xs text-orange-700 dark:text-orange-300">
+              Моторды бақылаңыз - қайсы команда жұмыс істейді?
+            </p>
+          </div>
+          <Button
+            onClick={scanDeviceInfo}
+            variant="outline"
+            size="sm"
+            className="border-blue-500 text-blue-600 bg-white"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            🔍 Сканерлеу
+          </Button>
+          <Button
+            onClick={testMotorProtocols}
+            variant="outline"
+            size="sm"
+            className="border-orange-500 text-orange-600 bg-white"
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            🧪 20+ Тест
+          </Button>
+        </div>
+      )}
+
+      {/* Ескерту - қосылмаған */}
+      {wedo.status !== "Connected" && (
+        <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded">
+          ⚠️ WeDo қосылмаған! Оң жақтағы "Қосылу" батырмасын басыңыз.
+        </div>
+      )}
+
+      {/* Custom Hex команда панелі */}
+      {wedo.status === "Connected" && showDiagnostics && (
+        <div className="border border-purple-300 dark:border-purple-700 rounded-lg p-3 bg-purple-50 dark:bg-purple-950/20">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+              📝 Custom Hex Команда
+            </h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+            >
+              Жасыру ▲
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Hex команда: 08 00 81 00 11 51 00 3f"
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <Button
+              onClick={sendCustomCommand}
+              size="sm"
+              className="bg-purple-600 text-white"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Жіберу
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Blockly workspace */}
       <div
         ref={blocklyRef}
         className="flex-1 rounded-lg overflow-hidden border border-border1"

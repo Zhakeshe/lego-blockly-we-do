@@ -176,43 +176,72 @@ export const useWeDo = (): WeDoHook => {
     setStatus("Disconnected");
   };
 
-  // ✅ MOTOR A (порт 0x00)
+  // ✅ MOTOR A (порт 0x01) - CHINESE CLONE PROTOCOL
   const setMotorA = async (speed: number) => {
     const s = Math.max(-100, Math.min(100, speed));
     log(`🚗 Мотор A = ${s}%`);
 
-    // Тестілеу үшін 6 түрлі протокол
-    const val = Math.round((s / 100) * 127);
+    // СТОП: 02 01 01 (3 байта)
+    if (s === 0) {
+      const stopCommand = new Uint8Array([0x02, 0x01, 0x01]);
+      try {
+        await writeOutput(stopCommand);
+      } catch (e) {
+        log(`⚠️ Қате: ${e}`);
+      }
+      return;
+    }
 
-    // 1. LPF2 протоколы (LEGO стандарты)
-    const lpf2 = new Uint8Array([
-      0x08, 0x00, 0x81, 0x00,
-      0x11, 0x51, 0x00,
-      val & 0xff,
-    ]);
+    // Китайский клон WeDo 2.0 протокол: 02 01 01 XX
+    // XX = signed byte: положительное = вперед, отрицательное = назад
+    let speedByte: number;
+    if (s > 0) {
+      // Вперед: 1-100 -> 0x01-0x7F (1-127)
+      speedByte = Math.round((s / 100) * 126) + 1;
+    } else {
+      // Назад: -1 до -100 -> 0xFF-0x80 (-1 до -128)
+      speedByte = Math.round((s / 100) * 127);
+      if (speedByte > 0) speedByte = 256 + speedByte; // Конвертация в unsigned
+    }
+
+    const command = new Uint8Array([0x02, 0x01, 0x01, speedByte & 0xff]);
 
     try {
-      await writeOutput(lpf2);
+      await writeOutput(command);
     } catch (e) {
       log(`⚠️ Қате: ${e}`);
     }
   };
 
-  // ✅ MOTOR B (порт 0x01)
+  // ✅ MOTOR B (порт 0x02) - CHINESE CLONE PROTOCOL
   const setMotorB = async (speed: number) => {
     const s = Math.max(-100, Math.min(100, speed));
     log(`🚗 Мотор B = ${s}%`);
 
-    const val = Math.round((s / 100) * 127);
+    // СТОП: 02 02 01 (3 байта)
+    if (s === 0) {
+      const stopCommand = new Uint8Array([0x02, 0x02, 0x01]);
+      try {
+        await writeOutput(stopCommand);
+      } catch (e) {
+        log(`⚠️ Қате: ${e}`);
+      }
+      return;
+    }
 
-    const lpf2 = new Uint8Array([
-      0x08, 0x00, 0x81, 0x01,  // 0x01 = порт B
-      0x11, 0x51, 0x00,
-      val & 0xff,
-    ]);
+    // Китайский клон WeDo 2.0 протокол: 02 02 01 XX
+    let speedByte: number;
+    if (s > 0) {
+      speedByte = Math.round((s / 100) * 126) + 1;
+    } else {
+      speedByte = Math.round((s / 100) * 127);
+      if (speedByte > 0) speedByte = 256 + speedByte;
+    }
+
+    const command = new Uint8Array([0x02, 0x02, 0x01, speedByte & 0xff]);
 
     try {
-      await writeOutput(lpf2);
+      await writeOutput(command);
     } catch (e) {
       log(`⚠️ Қате: ${e}`);
     }
@@ -223,6 +252,8 @@ export const useWeDo = (): WeDoHook => {
   };
 
   const stopMotor = async () => {
+    log("🛑 Барлық моторларды тоқтату");
+    // Правильная команда стоп - 3 байта без скорости
     await setMotorA(0);
     await setMotorB(0);
   };

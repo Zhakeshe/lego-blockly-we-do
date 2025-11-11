@@ -1,5 +1,5 @@
-import * as Blockly from 'blockly';
-import 'blockly/javascript';
+import * as Blockly from 'blockly/core'; // core-дан импорттаймыз
+import 'blockly/javascript'; // JS генераторын қосамыз
 
 // Motor control blocks
 export const defineCustomBlocks = () => {

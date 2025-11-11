@@ -181,13 +181,23 @@ export const useWeDo = (): WeDoHook => {
     const s = Math.max(-100, Math.min(100, speed));
     log(`🚗 Мотор A = ${s}%`);
 
+    // СТОП: 02 01 01 (3 байта)
+    if (s === 0) {
+      const stopCommand = new Uint8Array([0x02, 0x01, 0x01]);
+      try {
+        await writeOutput(stopCommand);
+      } catch (e) {
+        log(`⚠️ Қате: ${e}`);
+      }
+      return;
+    }
+
     // Китайский клон WeDo 2.0 протокол: 02 01 01 XX
     // XX = signed byte: положительное = вперед, отрицательное = назад
     let speedByte: number;
-    if (s >= 0) {
-      // Вперед: 0-100 -> 0x01-0x7F (1-127)
+    if (s > 0) {
+      // Вперед: 1-100 -> 0x01-0x7F (1-127)
       speedByte = Math.round((s / 100) * 126) + 1;
-      if (s === 0) speedByte = 0x01; // Минимальная скорость вместо стоп
     } else {
       // Назад: -1 до -100 -> 0xFF-0x80 (-1 до -128)
       speedByte = Math.round((s / 100) * 127);
@@ -208,11 +218,21 @@ export const useWeDo = (): WeDoHook => {
     const s = Math.max(-100, Math.min(100, speed));
     log(`🚗 Мотор B = ${s}%`);
 
+    // СТОП: 02 02 01 (3 байта)
+    if (s === 0) {
+      const stopCommand = new Uint8Array([0x02, 0x02, 0x01]);
+      try {
+        await writeOutput(stopCommand);
+      } catch (e) {
+        log(`⚠️ Қате: ${e}`);
+      }
+      return;
+    }
+
     // Китайский клон WeDo 2.0 протокол: 02 02 01 XX
     let speedByte: number;
-    if (s >= 0) {
+    if (s > 0) {
       speedByte = Math.round((s / 100) * 126) + 1;
-      if (s === 0) speedByte = 0x01;
     } else {
       speedByte = Math.round((s / 100) * 127);
       if (speedByte > 0) speedByte = 256 + speedByte;
@@ -233,7 +253,7 @@ export const useWeDo = (): WeDoHook => {
 
   const stopMotor = async () => {
     log("🛑 Барлық моторларды тоқтату");
-    // Китайский клон не поддерживает команду stop, используем минимальную скорость
+    // Правильная команда стоп - 3 байта без скорости
     await setMotorA(0);
     await setMotorB(0);
   };

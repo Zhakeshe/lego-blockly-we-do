@@ -178,7 +178,7 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [running, setRunning] = useState(false);
   const [hexInput, setHexInput] = useState("");
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(true); // Әдепкі ашық
   const { language, t } = useLanguage();
   const { theme } = useTheme();
 

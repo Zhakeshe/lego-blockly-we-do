@@ -239,6 +239,9 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     workspaceRef.current = workspace;
 
+    // Старый workspace-ті тазалау (ескі блоктар проблема тудыруы мүмкін)
+    workspace.clear();
+
     // Автоматты түрде старт блогын қосу
     const startBlock = workspace.newBlock("wedo_start");
     startBlock.initSvg();
@@ -338,6 +341,38 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         </div>
       </div>
 
+      {/* ДИАГНОСТИКА БАТЫРМАЛАРЫ - Үстінде */}
+      {wedo.status === "Connected" && (
+        <div className="flex gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-400 rounded-lg">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
+              🔬 ПРОТОКОЛ ТАБУ (Console ашыңыз: F12)
+            </p>
+            <p className="text-xs text-orange-700 dark:text-orange-300">
+              Моторды бақылаңыз - қайсы команда жұмыс істейді?
+            </p>
+          </div>
+          <Button
+            onClick={scanDeviceInfo}
+            variant="outline"
+            size="sm"
+            className="border-blue-500 text-blue-600 bg-white"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            🔍 Сканерлеу
+          </Button>
+          <Button
+            onClick={testMotorProtocols}
+            variant="outline"
+            size="sm"
+            className="border-orange-500 text-orange-600 bg-white"
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            🧪 20+ Тест
+          </Button>
+        </div>
+      )}
+
       {/* Ескерту - қосылмаған */}
       {wedo.status !== "Connected" && (
         <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded">
@@ -345,80 +380,39 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         </div>
       )}
 
-      {/* Диагностика панелі */}
-      <div className="border border-blue-300 dark:border-blue-700 rounded-lg p-3 bg-blue-50 dark:bg-blue-950/20">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-            🔬 Диагностика (Протокол табу)
-          </h3>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowDiagnostics(!showDiagnostics)}
-          >
-            {showDiagnostics ? "Жасыру ▲" : "Көрсету ▼"}
-          </Button>
-        </div>
-
-        {showDiagnostics && (
-          <div className="space-y-3">
-            {/* Негізгі диагностика батырмалары */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                onClick={scanDeviceInfo}
-                disabled={wedo.status !== "Connected"}
-                variant="outline"
-                size="sm"
-                className="border-blue-500 text-blue-600"
-              >
-                <Search className="w-4 h-4 mr-2" />
-                🔍 Құрылғыны сканерлеу
-              </Button>
-              <Button
-                onClick={testMotorProtocols}
-                disabled={wedo.status !== "Connected"}
-                variant="outline"
-                size="sm"
-                className="border-orange-500 text-orange-600"
-              >
-                <TestTube className="w-4 h-4 mr-2" />
-                🧪 20+ Протокол тестілеу
-              </Button>
-            </div>
-
-            {/* Custom hex команда */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Hex команда: 08 00 81 00 11 51 00 3f"
-                value={hexInput}
-                onChange={(e) => setHexInput(e.target.value)}
-                className="font-mono text-sm"
-                disabled={wedo.status !== "Connected"}
-              />
-              <Button
-                onClick={sendCustomCommand}
-                disabled={wedo.status !== "Connected"}
-                size="sm"
-                className="bg-purple-600 text-white"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Жіберу
-              </Button>
-            </div>
-
-            {/* Нұсқаулық */}
-            <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
-              <p className="font-semibold mb-1">📋 Қалай қолдану:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Console ашыңыз (F12 немесе Ctrl+Shift+I)</li>
-                <li>"🔍 Құрылғыны сканерлеу" - барлық характеристикаларды көру</li>
-                <li>"🧪 Протокол тестілеу" - моторды қараңыз, қайсысы қозғалады?</li>
-                <li>Консольдегі нөмірді маған айтыңыз!</li>
-              </ol>
-            </div>
+      {/* Custom Hex команда панелі */}
+      {wedo.status === "Connected" && showDiagnostics && (
+        <div className="border border-purple-300 dark:border-purple-700 rounded-lg p-3 bg-purple-50 dark:bg-purple-950/20">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+              📝 Custom Hex Команда
+            </h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+            >
+              Жасыру ▲
+            </Button>
           </div>
-        )}
-      </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Hex команда: 08 00 81 00 11 51 00 3f"
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <Button
+              onClick={sendCustomCommand}
+              size="sm"
+              className="bg-purple-600 text-white"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Жіберу
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Blockly workspace */}
       <div

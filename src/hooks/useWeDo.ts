@@ -98,7 +98,7 @@ export const useWeDo = (): WeDoHook => {
     setStatus("Disconnected");
   };
 
-  // ✅ MOTOR — LPF2 smart motor format (клондарға жұмыс істейді)
+  // MOTOR - LPF2 smart motor format
   const runMotor = async (speed: number) => {
     const s = Math.max(-100, Math.min(100, speed));
     const val = Math.round((s / 100) * 127);
@@ -116,7 +116,7 @@ export const useWeDo = (): WeDoHook => {
     await runMotor(0);
   };
 
-  // ✅ LED — discrete mode
+  // LED - discrete mode
   const setHubLed = async (color: number) => {
     const frame = new Uint8Array([0x04, 0x06, 0x04, 0x01, color]);
     await writeOutput(frame);
@@ -136,4 +136,3 @@ export const useWeDo = (): WeDoHook => {
     setLogCallback,
   };
 };
-

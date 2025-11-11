@@ -62,13 +62,13 @@
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
 
-    /* ✅ ҚОСҚАН 3D ТӘУЕЛДІЛІКТЕР */
     "three": "^0.164.0",
     "@react-three/fiber": "^8.17.10",
     "@react-three/drei": "^9.111.6",
     "@react-three/cannon": "^6.5.2",
-    "axios": "^1.6.8",
-    "@react-three/fiber": "^8.13.0"
+
+    /* ✅ ЖАҢАДАН ҚОСҚАНЫМ */
+    "axios": "^1.6.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -76,6 +76,10 @@
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
+
+    /* ✅ TS үшін axios типтері */
+    "@types/axios": "^0.14.0",
+
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
@@ -90,3 +94,4 @@
     "vite": "^5.4.19"
   }
 }
+

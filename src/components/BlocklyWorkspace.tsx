@@ -294,6 +294,17 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
     await wedo.testMotor();
   };
 
+  const testBothChars = async () => {
+    if (wedo.status !== "Connected") {
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+    console.clear();
+    console.log("🔄 ЕКІ ХАРАКТЕРИСТИКАМЕН ТЕСТ");
+    console.log("⚠️ МОТОР ҚАРАҢЫЗ - 00001563 немесе 00001565 жұмыс істейді ма?\n");
+    await wedo.testBothCharacteristics();
+  };
+
   const scanDeviceInfo = async () => {
     if (wedo.status !== "Connected") {
       alert("⚠️ Алдымен WeDo-ны қосыңыз!");
@@ -368,7 +379,15 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
             className="border-orange-500 text-orange-600 bg-white"
           >
             <TestTube className="w-4 h-4 mr-2" />
-            🧪 20+ Тест
+            🧪 15 Тест
+          </Button>
+          <Button
+            onClick={testBothChars}
+            variant="outline"
+            size="sm"
+            className="border-purple-500 text-purple-600 bg-white font-bold"
+          >
+            🔄 2 Порт Тест
           </Button>
         </div>
       )}

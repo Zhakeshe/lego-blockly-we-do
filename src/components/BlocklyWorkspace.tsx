@@ -448,6 +448,15 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
           <Button variant="outline" size="sm" onClick={loadProject}>
             <FolderOpen className="w-4 h-4 mr-2" /> Ашу
           </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => wedo.testMotor && wedo.testMotor()}
+            disabled={!isConnected}
+            className="bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30"
+          >
+            🧪 Моторды тест
+          </Button>
           
           <div className={`flex items-center gap-2 ml-4 px-3 py-1.5 rounded-md font-medium transition-colors ${
             isConnected 

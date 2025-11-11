@@ -23,6 +23,7 @@ export interface WeDoHook {
   setHubLed: (color: number) => Promise<void>;
   setLogCallback: (callback: (m: string, t: any) => void) => void;
   testMotor: () => Promise<void>;
+  testBothCharacteristics: () => Promise<void>;
   scanDevice: () => Promise<void>;
   sendCustomHex: (hexString: string) => Promise<void>;
   testSingleCommand: (hexString: string, waitMs?: number) => Promise<void>;
@@ -48,6 +49,7 @@ export const useWeDo = (): WeDoHook => {
   const deviceRef = useRef<any>(null);
   const serverRef = useRef<any>(null);
   const outputRef = useRef<any>(null);
+  const output2Ref = useRef<any>(null); // Альтернативная характеристика для записи
   const sensorRef = useRef<any>(null);
   const notifyRef = useRef<any>(null); // Қосымша NOTIFY характеристика
   const logRef = useRef<any>(null);
@@ -131,6 +133,15 @@ export const useWeDo = (): WeDoHook => {
     // OUTPUT характеристика (командалар жіберу үшін)
     outputRef.current = await service.getCharacteristic(OUTPUT_UUID);
     log(`✍️ OUTPUT характеристика дайын: ${OUTPUT_UUID}`);
+
+    // АЛЬТЕРНАТИВНАЯ OUTPUT характеристика (00001563)
+    try {
+      const OUTPUT_UUID2 = "00001563-1212-efde-1523-785feabcd123";
+      output2Ref.current = await service.getCharacteristic(OUTPUT_UUID2);
+      log(`✍️ Альтернативная OUTPUT дайын: ${OUTPUT_UUID2}`);
+    } catch (e) {
+      log(`⚠️ Альтернативная OUTPUT табылмады: ${e}`);
+    }
 
     // SENSOR характеристика (00001560 - READ + NOTIFY)
     try {
@@ -465,6 +476,62 @@ export const useWeDo = (): WeDoHook => {
     }
   };
 
+  // 🔄 ТЕСТ ЕКІ ХАРАКТЕРИСТИКАМЕН - 00001563 және 00001565
+  const testBothCharacteristics = async () => {
+    log("🔄🔄🔄 ЕКІ ХАРАКТЕРИСТИКАМЕН ТЕСТ!");
+    log("⚠️ МОТОР ҚАРАҢЫЗ - қайсысы жұмыс істейді?\n");
+
+    if (!outputRef.current) {
+      log("❌ Құрылғы қосылмаған!");
+      return;
+    }
+
+    const testCommands = [
+      { name: "Қарапайым: 01 64", data: new Uint8Array([0x01, 0x64]), stop: new Uint8Array([0x01, 0x00]) },
+      { name: "WeDo: 02 01 01", data: new Uint8Array([0x02, 0x01, 0x01]), stop: new Uint8Array([0x02, 0x01, 0x00]) },
+      { name: "LPF2: 08 00 81 00 11 51 00 64", data: new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, 0x64]), stop: new Uint8Array([0x08, 0x00, 0x81, 0x00, 0x11, 0x51, 0x00, 0x00]) },
+    ];
+
+    for (const cmd of testCommands) {
+      log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      log(`📋 Тест команда: ${cmd.name}\n`);
+
+      // Тест с характеристикой 00001565
+      log(`📍 ТЕСТ #1: Характеристика 00001565`);
+      log(`📤 Жіберу: ${hex(cmd.data)}`);
+      try {
+        await outputRef.current.writeValue(cmd.data);
+        log(`✅ Жіберілді! 3 секунд күтіңіз...`);
+        await new Promise(r => setTimeout(r, 3000));
+        await outputRef.current.writeValue(cmd.stop);
+        await new Promise(r => setTimeout(r, 500));
+      } catch (e: any) {
+        log(`❌ Қате: ${e.message}`);
+      }
+
+      // Тест с характеристикой 00001563 (если доступна)
+      if (output2Ref.current) {
+        log(`\n📍 ТЕСТ #2: Характеристика 00001563`);
+        log(`📤 Жіберу: ${hex(cmd.data)}`);
+        try {
+          await output2Ref.current.writeValue(cmd.data);
+          log(`✅ Жіберілді! 3 секунд күтіңіз...`);
+          await new Promise(r => setTimeout(r, 3000));
+          await output2Ref.current.writeValue(cmd.stop);
+          await new Promise(r => setTimeout(r, 500));
+        } catch (e: any) {
+          log(`❌ Қате: ${e.message}`);
+        }
+      } else {
+        log(`\n⚠️ Характеристика 00001563 қолжетімсіз`);
+      }
+    }
+
+    log(`\n\n🏁 ЕКІ ХАРАКТЕРИСТИКАМЕН ТЕСТ АЯҚТАЛДЫ!`);
+    log(`❓ Мотор қозғалды ма? Қай характеристикада?`);
+    log(`💡 Консольді қараңыз - ⬇️ NOTIFY болды ма?`);
+  };
+
   const setLogCallback = (cb: any) => (logRef.current = cb);
 
   return {
@@ -479,6 +546,7 @@ export const useWeDo = (): WeDoHook => {
     setHubLed,
     setLogCallback,
     testMotor,
+    testBothCharacteristics,
     scanDevice,
     sendCustomHex,
     testSingleCommand,

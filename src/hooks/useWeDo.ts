@@ -25,6 +25,7 @@ export interface WeDoHook {
   testMotor: () => Promise<void>;
   scanDevice: () => Promise<void>;
   sendCustomHex: (hexString: string) => Promise<void>;
+  testSingleCommand: (hexString: string, waitMs?: number) => Promise<void>;
 }
 
 // SMARTCAR CLONE UUID
@@ -48,6 +49,7 @@ export const useWeDo = (): WeDoHook => {
   const serverRef = useRef<any>(null);
   const outputRef = useRef<any>(null);
   const sensorRef = useRef<any>(null);
+  const notifyRef = useRef<any>(null); // Қосымша NOTIFY характеристика
   const logRef = useRef<any>(null);
 
   const hex = (arr: Uint8Array) =>
@@ -59,22 +61,57 @@ export const useWeDo = (): WeDoHook => {
   };
 
   const writeOutput = async (bytes: Uint8Array) => {
-    log("→ " + hex(bytes), "cmd");
-    await outputRef.current.writeValue(bytes);
+    log(`⬆️ КОМАНДА ЖІБЕРУ: ${hex(bytes)}`, "cmd");
+    log(`   📊 Длина: ${bytes.length} байт | Первый байт: 0x${bytes[0].toString(16).padStart(2, '0')}`);
+
+    try {
+      await outputRef.current.writeValue(bytes);
+      log(`   ✅ Команда жіберілді успешно!`);
+
+      // Кішкене күтейік - жауап келуі мүмкін
+      await new Promise(r => setTimeout(r, 100));
+    } catch (e: any) {
+      log(`   ❌ ҚАТЕ жіберуде: ${e.message || e}`, "error");
+      throw e;
+    }
   };
 
   const handleNotify = (ev: any) => {
     const v = new Uint8Array(ev.target.value.buffer);
-    log("← " + hex(v), "notify");
+    const charUUID = ev.target.uuid;
 
-    // battery: 06 04 XX
-    if (v.length === 3 && v[0] === 0x06 && v[1] === 0x04) {
-      setTelemetry(prev => ({ ...prev, battery: v[2] }));
+    log(`⬇️ NOTIFY [${charUUID}]: ${hex(v)}`, "notify");
+
+    // Детальный анализ входящих данных
+    if (v.length > 0) {
+      log(`   📊 Длина: ${v.length} байт | Первый байт: 0x${v[0].toString(16).padStart(2, '0')}`);
+
+      // Анализ паттернов
+      if (v.length >= 3) {
+        log(`   🔍 Паттерн: [${v[0].toString(16)} ${v[1].toString(16)} ${v[2].toString(16)}...]`);
+      }
+
+      // Проверка на информацию о подключенных устройствах
+      if (v[0] === 0x04 && v.length > 2) {
+        log(`   💡 ВОЗМОЖНО: Информация об устройстве! Тип=${v[1]}, Порт=${v[2]}`);
+      }
+
+      // battery: 06 04 XX
+      if (v.length === 3 && v[0] === 0x06 && v[1] === 0x04) {
+        log(`   🔋 БАТАРЕЯ: ${v[2]}%`);
+        setTelemetry(prev => ({ ...prev, battery: v[2] }));
+      }
+
+      // Ответ на команду
+      if (v[0] === 0x05 || v[0] === 0x82) {
+        log(`   ✉️ ОТВЕТ НА КОМАНДУ!`);
+      }
     }
   };
 
   const connect = useCallback(async () => {
     setStatus("Connecting");
+    log("🔵 Bluetooth қосылу басталды...");
 
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
@@ -82,17 +119,42 @@ export const useWeDo = (): WeDoHook => {
     });
 
     deviceRef.current = device;
+    log(`📱 Құрылғы табылды: ${device.name || 'Атаусыз'}`);
+
     const server = await device.gatt!.connect();
     serverRef.current = server;
+    log("🔗 GATT серверге қосылды");
 
     const service = await server.getPrimaryService(SERVICE_UUID);
+    log(`📡 Сервис алынды: ${SERVICE_UUID}`);
+
+    // OUTPUT характеристика (командалар жіберу үшін)
     outputRef.current = await service.getCharacteristic(OUTPUT_UUID);
+    log(`✍️ OUTPUT характеристика дайын: ${OUTPUT_UUID}`);
 
-    sensorRef.current = await service.getCharacteristic(SENSOR_UUID);
-    await sensorRef.current.startNotifications();
-    sensorRef.current.addEventListener("characteristicvaluechanged", handleNotify);
+    // SENSOR характеристика (00001560 - READ + NOTIFY)
+    try {
+      sensorRef.current = await service.getCharacteristic(SENSOR_UUID);
+      await sensorRef.current.startNotifications();
+      sensorRef.current.addEventListener("characteristicvaluechanged", handleNotify);
+      log(`👂 NOTIFY қосылды: ${SENSOR_UUID}`);
+    } catch (e) {
+      log(`⚠️ Sensor NOTIFY қосу қатесі: ${e}`);
+    }
 
-    log("Connected");
+    // Қосымша NOTIFY характеристика (00001561)
+    try {
+      const NOTIFY_UUID = "00001561-1212-efde-1523-785feabcd123";
+      notifyRef.current = await service.getCharacteristic(NOTIFY_UUID);
+      await notifyRef.current.startNotifications();
+      notifyRef.current.addEventListener("characteristicvaluechanged", handleNotify);
+      log(`👂 Қосымша NOTIFY қосылды: ${NOTIFY_UUID}`);
+    } catch (e) {
+      log(`⚠️ Қосымша NOTIFY қосу қатесі: ${e}`);
+    }
+
+    log("✅ ☑️ ✅ ТОЛЫҒЫМЕН ҚОСЫЛДЫ! ✅ ☑️ ✅");
+    log("📨 Енді барлық Bluetooth хабарламалар көрсетіледі");
     setStatus("Connected");
   }, []);
 
@@ -373,6 +435,36 @@ export const useWeDo = (): WeDoHook => {
     }
   };
 
+  // 🧪 ЖАЛҒЫЗ КОМАНДА ТЕСТІЛЕУ - жауапты күту
+  const testSingleCommand = async (hexString: string, waitMs: number = 3000) => {
+    try {
+      const cleaned = hexString.replace(/[^0-9a-fA-F]/g, "");
+      if (cleaned.length === 0 || cleaned.length % 2 !== 0) {
+        log("❌ Қате hex формат!");
+        return;
+      }
+
+      const bytes = new Uint8Array(cleaned.length / 2);
+      for (let i = 0; i < cleaned.length; i += 2) {
+        bytes[i / 2] = parseInt(cleaned.substr(i, 2), 16);
+      }
+
+      log(`\n🧪 БІРЛІК ТЕСТ БАСТАЛДЫ`);
+      log(`📤 Команда: ${hex(bytes)}`);
+      log(`⏱️ ${waitMs}ms күтіп, жауапты қараймыз...\n`);
+
+      await writeOutput(bytes);
+
+      // Жауапты күту
+      await new Promise(r => setTimeout(r, waitMs));
+
+      log(`\n✅ Тест аяқталды. Жоғарыда ⬇️ NOTIFY хабарламаларын қараңыз!`);
+      log(`💡 Егер ештеме болмаса - мотор басқа протоколды қолданады`);
+    } catch (e: any) {
+      log(`❌ Қате: ${e.message || e}`);
+    }
+  };
+
   const setLogCallback = (cb: any) => (logRef.current = cb);
 
   return {
@@ -389,6 +481,7 @@ export const useWeDo = (): WeDoHook => {
     testMotor,
     scanDevice,
     sendCustomHex,
+    testSingleCommand,
   };
 };
 

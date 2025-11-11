@@ -60,58 +60,76 @@ const defineBlocks = () => {
   if (blocksInitialized) return;
   blocksInitialized = true;
 
-  // Мотор включить на время
-  Blockly.Blocks["wedo_motor_run"] = {
+  // 🚀 СТАРТ БЛОГЫ
+  Blockly.Blocks["wedo_start"] = {
+    init() {
+      this.appendDummyInput().appendField("🚀 Бағдарлама басталғанда");
+      this.appendStatementInput("STACK");
+      this.setColour(0);
+      this.setDeletable(false);
+      this.setMovable(true);
+    },
+  };
+
+  // 🚗 Мотор A
+  Blockly.Blocks["wedo_motor_a"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_TURN_MOTOR_FOR}")
-        .appendField(new Blockly.FieldNumber(1, 0, 10), "SECONDS")
-        .appendField("%{BKY_WEDO_SECONDS}");
+        .appendField("🚗 Мотор A жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
       this.setColour(120);
     },
   };
 
-  // Мотор стоп
+  // 🚗 Мотор B
+  Blockly.Blocks["wedo_motor_b"] = {
+    init() {
+      this.appendDummyInput()
+        .appendField("🚗 Мотор B жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED");
+      this.setPreviousStatement(true);
+      this.setNextStatement(true);
+      this.setColour(120);
+    },
+  };
+
+  // ⏹️ Моторды тоқтату
   Blockly.Blocks["wedo_motor_stop"] = {
     init() {
-      this.appendDummyInput().appendField("%{BKY_WEDO_TURN_MOTOR_OFF}");
+      this.appendDummyInput().appendField("⏹️ Моторды тоқтату");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
       this.setColour(120);
     },
   };
 
-  // Направление
-  Blockly.Blocks["wedo_motor_direction"] = {
+  // ⏱️ Күту
+  Blockly.Blocks["wedo_wait"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_DIRECTION}")
-        .appendField(
-          new Blockly.FieldDropdown([
-            ["%{BKY_WEDO_FORWARD}", "100"],
-            ["%{BKY_WEDO_BACKWARD}", "-100"],
-          ]),
-          "DIR"
-        );
+        .appendField("⏱️ Күту")
+        .appendField(new Blockly.FieldNumber(1, 0, 10, 0.1), "SECONDS")
+        .appendField("секунд");
       this.setPreviousStatement(true);
       this.setNextStatement(true);
-      this.setColour(120);
+      this.setColour(290);
     },
   };
 
-  // Цвет LED
+  // 💡 LED
   Blockly.Blocks["wedo_led"] = {
     init() {
       this.appendDummyInput()
-        .appendField("%{BKY_WEDO_LED}")
+        .appendField("💡 LED түсі")
         .appendField(
           new Blockly.FieldDropdown([
-            ["🔴 red", "9"],
-            ["🟢 green", "7"],
-            ["🔵 blue", "3"],
-            ["⚫ off", "0"],
+            ["🔴 Қызыл", "9"],
+            ["🟢 Жасыл", "7"],
+            ["🔵 Көк", "3"],
+            ["🟡 Сары", "8"],
+            ["⚫ Өшіру", "0"],
           ]),
           "COLOR"
         );
@@ -123,20 +141,28 @@ const defineBlocks = () => {
 
   // === Генераторы ===
 
-  javascriptGenerator.forBlock["wedo_motor_run"] = (block) => {
-    const sec = block.getFieldValue("SECONDS");
-    return `await wedo.runMotor(100);
-await new Promise(r => setTimeout(r, ${sec * 1000}));
-await wedo.stopMotor();\n`;
+  javascriptGenerator.forBlock["wedo_start"] = (block, generator) => {
+    const stack = generator.statementToCode(block, "STACK");
+    return stack;
+  };
+
+  javascriptGenerator.forBlock["wedo_motor_a"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    return `await wedo.setMotorA(${speed});\n`;
+  };
+
+  javascriptGenerator.forBlock["wedo_motor_b"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    return `await wedo.setMotorB(${speed});\n`;
   };
 
   javascriptGenerator.forBlock["wedo_motor_stop"] = () => {
     return `await wedo.stopMotor();\n`;
   };
 
-  javascriptGenerator.forBlock["wedo_motor_direction"] = (block) => {
-    const dir = block.getFieldValue("DIR");
-    return `await wedo.runMotor(${dir});\n`;
+  javascriptGenerator.forBlock["wedo_wait"] = (block) => {
+    const sec = block.getFieldValue("SECONDS");
+    return `await new Promise(r => setTimeout(r, ${sec * 1000}));\n`;
   };
 
   javascriptGenerator.forBlock["wedo_led"] = (block) => {
@@ -176,14 +202,22 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     const toolboxXml = `
       <xml>
-        <category name="${t("blocks.motor")}" colour="120">
-          <block type="wedo_motor_run"></block>
-          <block type="wedo_motor_stop"></block>
-          <block type="wedo_motor_direction"></block>
+        <category name="🚀 Басталу" colour="0">
+          <block type="wedo_start"></block>
         </category>
 
-        <category name="${t("blocks.led")}" colour="45">
+        <category name="🚗 Моторлар" colour="120">
+          <block type="wedo_motor_a"></block>
+          <block type="wedo_motor_b"></block>
+          <block type="wedo_motor_stop"></block>
+        </category>
+
+        <category name="💡 LED" colour="45">
           <block type="wedo_led"></block>
+        </category>
+
+        <category name="⏱️ Күту" colour="290">
+          <block type="wedo_wait"></block>
         </category>
       </xml>
     `;
@@ -202,20 +236,54 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     workspaceRef.current = workspace;
 
+    // Автоматты түрде старт блогын қосу
+    const startBlock = workspace.newBlock("wedo_start");
+    startBlock.initSvg();
+    startBlock.render();
+    startBlock.moveBy(50, 50);
+
     return () => workspace.dispose();
   }, [language, theme, t]);
 
   const run = async () => {
     if (!workspaceRef.current) return;
+
+    console.log("🚀 Бағдарлама басталды");
+
+    if (wedo.status !== "Connected") {
+      console.error("⚠️ WeDo қосылмаған!");
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+
     const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
+    console.log("📝 Генерацияланған код:\n", code);
+
+    if (!code.trim()) {
+      console.warn("⚠️ Бос бағдарлама!");
+      alert("⚠️ Блоктарды қосыңыз!");
+      return;
+    }
 
     setRunning(true);
     try {
       const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
       await new AsyncFunction("wedo", code)(wedo);
+      console.log("✅ Бағдарлама аяқталды");
+    } catch (e) {
+      console.error("❌ Қате:", e);
     } finally {
       setRunning(false);
     }
+  };
+
+  const testMotorProtocols = async () => {
+    if (wedo.status !== "Connected") {
+      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
+      return;
+    }
+    console.clear();
+    await wedo.testMotor();
   };
 
   return (
@@ -231,7 +299,15 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={run} disabled={running} className="bg-green-600 text-white">
+          <Button
+            onClick={testMotorProtocols}
+            disabled={wedo.status !== "Connected"}
+            variant="outline"
+            className="border-orange-500 text-orange-600"
+          >
+            🧪 Моторды тест
+          </Button>
+          <Button onClick={run} disabled={running || wedo.status !== "Connected"} className="bg-green-600 text-white">
             <Play className="w-4 h-4 mr-2" /> {t("control.run")}
           </Button>
           <Button disabled={!running} variant="destructive">
@@ -239,6 +315,12 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
           </Button>
         </div>
       </div>
+
+      {wedo.status !== "Connected" && (
+        <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded">
+          ⚠️ WeDo қосылмаған! Оң жақтағы "Қосылу" батырмасын басыңыз.
+        </div>
+      )}
 
       <div
         ref={blocklyRef}

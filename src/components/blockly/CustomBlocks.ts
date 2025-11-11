@@ -1,4 +1,5 @@
 import * as Blockly from 'blockly';
+import 'blockly/javascript';
 
 // Motor control blocks
 export const defineCustomBlocks = () => {

@@ -10,6 +10,8 @@ import { javascriptGenerator } from "blockly/javascript";
 
 interface BlocklyWorkspaceProps {
   wedo: WeDoHook;
+  on3DMotorChange?: (speed: number) => void;
+  on3DLedChange?: (color: string) => void;
 }
 
 // Чтобы блоки не создавались повторно
@@ -149,16 +151,19 @@ const defineBlocks = () => {
 
   javascriptGenerator.forBlock["wedo_motor_a"] = (block) => {
     const speed = block.getFieldValue("SPEED");
-    return `await wedo.setMotorA(${speed});\n`;
+    return `set3DMotor(${speed});
+await wedo.setMotorA(${speed});\n`;
   };
 
   javascriptGenerator.forBlock["wedo_motor_b"] = (block) => {
     const speed = block.getFieldValue("SPEED");
-    return `await wedo.setMotorB(${speed});\n`;
+    return `set3DMotor(${speed});
+await wedo.setMotorB(${speed});\n`;
   };
 
   javascriptGenerator.forBlock["wedo_motor_stop"] = () => {
-    return `await wedo.stopMotor();\n`;
+    return `set3DMotor(0);
+await wedo.stopMotor();\n`;
   };
 
   javascriptGenerator.forBlock["wedo_wait"] = (block) => {
@@ -168,12 +173,14 @@ const defineBlocks = () => {
 
   javascriptGenerator.forBlock["wedo_led"] = (block) => {
     const color = block.getFieldValue("COLOR");
-    return `await wedo.setHubLed(${color});\n`;
+    const colorMap: any = { "9": "#f44336", "7": "#4caf50", "3": "#2196f3", "8": "#ffeb3b", "0": "#000" };
+    return `set3DLed(${JSON.stringify(colorMap[color] || "#000")});
+await wedo.setHubLed(${color});\n`;
   };
 };
 
 // === Основной компонент ===
-export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
+export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: BlocklyWorkspaceProps) => {
   const blocklyRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [running, setRunning] = useState(false);
@@ -273,13 +280,19 @@ export const BlocklyWorkspace = ({ wedo }: BlocklyWorkspaceProps) => {
 
     setRunning(true);
     try {
+      // Create context with WeDo and 3D callbacks
+      const set3DMotor = on3DMotorChange || (() => {});
+      const set3DLed = on3DLedChange || (() => {});
+
       const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-      await new AsyncFunction("wedo", code)(wedo);
+      await new AsyncFunction("wedo", "set3DMotor", "set3DLed", code)(wedo, set3DMotor, set3DLed);
       console.log("✅ Бағдарлама аяқталды");
     } catch (e) {
       console.error("❌ Қате:", e);
     } finally {
       setRunning(false);
+      // Reset 3D animations
+      on3DMotorChange?.(0);
     }
   };
 

@@ -1,90 +1,67 @@
-import { Cube, Cog, Circle, Minus, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { LegoPart } from "./LegoConstructor3D";
+import { Boxes, Cog, Circle, Minus, Square } from "lucide-react";
 
 interface PartsPaletteProps {
-  onAddPart: (type: LegoPart["type"]) => void;
+  onAddPart: (type: "brick" | "motor" | "wheel" | "axle" | "hub") => void;
 }
 
-const partTemplates = {
-  brick: {
-    icon: Cube,
-    color: "#F44336",
-    label: "Brick",
-    labelKk: "Кірпіш",
-    labelRu: "Кирпич",
-  },
-  motor: {
-    icon: Cog,
-    color: "#4CAF50",
-    label: "Motor",
-    labelKk: "Қозғалтқыш",
-    labelRu: "Мотор",
-  },
-  wheel: {
-    icon: Circle,
-    color: "#2196F3",
-    label: "Wheel",
-    labelKk: "Дөңгелек",
-    labelRu: "Колесо",
-  },
-  axle: {
-    icon: Minus,
-    color: "#666",
-    label: "Axle",
-    labelKk: "Ось",
-    labelRu: "Ось",
-  },
-  hub: {
-    icon: Box,
-    color: "#90CAF9",
-    label: "WeDo Hub",
-    labelKk: "WeDo Хаб",
-    labelRu: "WeDo Хаб",
-  },
-};
-
 export const PartsPalette = ({ onAddPart }: PartsPaletteProps) => {
-  const { language, t } = useLanguage();
-
-  const getLabel = (template: typeof partTemplates.brick) => {
-    if (language === "kk") return template.labelKk;
-    if (language === "ru") return template.labelRu;
-    return template.label;
-  };
+  const parts = [
+    {
+      type: "hub" as const,
+      icon: Square,
+      label: { en: "Hub", ru: "Хаб", kk: "Хаб" },
+      color: "bg-blue-200 hover:bg-blue-300 dark:bg-blue-900 dark:hover:bg-blue-800",
+    },
+    {
+      type: "motor" as const,
+      icon: Cog,
+      label: { en: "Motor", ru: "Мотор", kk: "Мотор" },
+      color: "bg-green-200 hover:bg-green-300 dark:bg-green-900 dark:hover:bg-green-800",
+    },
+    {
+      type: "wheel" as const,
+      icon: Circle,
+      label: { en: "Wheel", ru: "Колесо", kk: "Дөңгелек" },
+      color: "bg-sky-200 hover:bg-sky-300 dark:bg-sky-900 dark:hover:bg-sky-800",
+    },
+    {
+      type: "axle" as const,
+      icon: Minus,
+      label: { en: "Axle", ru: "Ось", kk: "Ось" },
+      color: "bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600",
+    },
+    {
+      type: "brick" as const,
+      icon: Boxes,
+      label: { en: "Brick", ru: "Кирпич", kk: "Кірпіш" },
+      color: "bg-red-200 hover:bg-red-300 dark:bg-red-900 dark:hover:bg-red-800",
+    },
+  ];
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="text-lg">{t("constructor.parts") || "Parts / Детали"}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {Object.entries(partTemplates).map(([type, template]) => {
-          const Icon = template.icon;
+    <div className="h-full bg-surface1 border border-border1 rounded-lg p-4">
+      <h3 className="text-sm font-semibold text-text1 mb-3">LEGO Parts</h3>
+      <div className="space-y-2">
+        {parts.map((part) => {
+          const Icon = part.icon;
           return (
             <Button
-              key={type}
+              key={part.type}
               variant="outline"
-              className="w-full justify-start"
-              onClick={() => onAddPart(type as LegoPart["type"])}
+              className={`w-full justify-start ${part.color} border-border1`}
+              onClick={() => onAddPart(part.type)}
             >
-              <Icon className="w-4 h-4 mr-2" style={{ color: template.color }} />
-              {getLabel(template)}
+              <Icon className="w-4 h-4 mr-2" />
+              <span className="text-sm">{part.label.en}</span>
             </Button>
           );
         })}
-
-        <div className="pt-4 border-t border-border1 mt-4">
-          <p className="text-xs text-text3 mb-2">{t("constructor.instructions") || "Click to add parts to the scene"}</p>
-          <div className="text-xs text-text4 space-y-1">
-            <p>• Drag to rotate view</p>
-            <p>• Scroll to zoom</p>
-            <p>• Click part to select</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="mt-4 p-3 bg-surface2 rounded text-xs text-text3">
+        <p className="font-semibold mb-1">Tip:</p>
+        <p>Click parts to add them to the 3D scene</p>
+      </div>
+    </div>
   );
 };

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Square, Save, FolderOpen, Search, TestTube, Send } from "lucide-react";
+import { Play, Square, Save, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { WeDoHook } from "@/hooks/useWeDo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "next-themes";
@@ -234,8 +233,6 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
   const blocklyRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [running, setRunning] = useState(false);
-  const [hexInput, setHexInput] = useState("");
-  const [showDiagnostics, setShowDiagnostics] = useState(true); // Әдепкі ашық
   const { language, t } = useLanguage();
   const { theme } = useTheme();
 
@@ -256,9 +253,9 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
     Blockly.Msg["WEDO_LED"] = lbl.setLed;
   }, [language]);
 
-  // Инициализация workspace
+  // Инициализация workspace (только один раз)
   useEffect(() => {
-    if (!blocklyRef.current) return;
+    if (!blocklyRef.current || workspaceRef.current) return;
 
     const toolboxXml = `
       <xml>
@@ -298,17 +295,44 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
 
     workspaceRef.current = workspace;
 
-    // Старый workspace-ті тазалау (ескі блоктар проблема тудыруы мүмкін)
-    workspace.clear();
+    // Загрузка сохраненного workspace из localStorage
+    const savedWorkspace = localStorage.getItem("blockly_workspace");
+    if (savedWorkspace) {
+      try {
+        const xml = Blockly.utils.xml.textToDom(savedWorkspace);
+        Blockly.Xml.domToWorkspace(xml, workspace);
+      } catch (e) {
+        console.error("Ошибка загрузки workspace:", e);
+        // Если ошибка, создаем стартовый блок
+        const startBlock = workspace.newBlock("wedo_start");
+        startBlock.initSvg();
+        startBlock.render();
+        startBlock.moveBy(50, 50);
+      }
+    } else {
+      // Первый запуск - создаем стартовый блок
+      const startBlock = workspace.newBlock("wedo_start");
+      startBlock.initSvg();
+      startBlock.render();
+      startBlock.moveBy(50, 50);
+    }
 
-    // Автоматты түрде старт блогын қосу
-    const startBlock = workspace.newBlock("wedo_start");
-    startBlock.initSvg();
-    startBlock.render();
-    startBlock.moveBy(50, 50);
+    // Автосохранение при изменении
+    workspace.addChangeListener(() => {
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+      localStorage.setItem("blockly_workspace", xmlText);
+    });
 
-    return () => workspace.dispose();
-  }, [language, theme, t]);
+    return () => {
+      // Сохранение перед закрытием
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+      localStorage.setItem("blockly_workspace", xmlText);
+      workspace.dispose();
+      workspaceRef.current = null;
+    };
+  }, [theme]);
 
   const run = async () => {
     if (!workspaceRef.current) return;
@@ -348,61 +372,57 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
     }
   };
 
-  const testMotorProtocols = async () => {
-    if (wedo.status !== "Connected") {
-      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
-      return;
-    }
-    console.clear();
-    console.log("🧪 20+ ПРОТОКОЛ ТЕСТІЛЕНЕДІ");
-    console.log("⚠️ НАЗАР АУДАРЫҢЫЗ: Моторды қараңыз - қайсысы қозғалады!\n");
-    await wedo.testMotor();
+  const saveWorkspace = () => {
+    if (!workspaceRef.current) return;
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    const xmlText = Blockly.Xml.domToText(xml);
+
+    const blob = new Blob([xmlText], { type: 'text/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'wedo_program.xml';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const testBothChars = async () => {
-    if (wedo.status !== "Connected") {
-      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
-      return;
-    }
-    console.clear();
-    console.log("🔄 ЕКІ ХАРАКТЕРИСТИКАМЕН ТЕСТ");
-    console.log("⚠️ МОТОР ҚАРАҢЫЗ - 00001563 немесе 00001565 жұмыс істейді ма?\n");
-    await wedo.testBothCharacteristics();
+  const loadWorkspace = () => {
+    if (!workspaceRef.current) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xml';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const xmlText = event.target?.result as string;
+          const xml = Blockly.utils.xml.textToDom(xmlText);
+          workspaceRef.current?.clear();
+          Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
+        } catch (err) {
+          console.error("Қате жүктеу кезінде:", err);
+          alert("❌ Файлды жүктеу қатесі!");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
-  const scanDeviceInfo = async () => {
-    if (wedo.status !== "Connected") {
-      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
-      return;
-    }
-    console.clear();
-    console.log("🔍 ҚҰРЫЛҒЫНЫ СКАНЕРЛЕУ");
-    console.log("📡 Барлық Bluetooth характеристикалары тексеріледі\n");
-    await wedo.scanDevice();
-  };
-
-  const sendCustomCommand = async () => {
-    if (wedo.status !== "Connected") {
-      alert("⚠️ Алдымен WeDo-ны қосыңыз!");
-      return;
-    }
-    if (!hexInput.trim()) {
-      alert("⚠️ Hex команда енгізіңіз! Мысал: 08 00 81 00 11 51 00 3f");
-      return;
-    }
-    console.log(`\n📝 Custom команда жіберілуде: ${hexInput}`);
-    await wedo.sendCustomHex(hexInput);
-  };
 
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Басқару батырмалары */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={saveWorkspace}>
             <Save className="w-4 h-4 mr-2" /> {t("control.save")}
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={loadWorkspace}>
             <FolderOpen className="w-4 h-4 mr-2" /> {t("control.load")}
           </Button>
         </div>
@@ -417,84 +437,10 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
         </div>
       </div>
 
-      {/* ДИАГНОСТИКА БАТЫРМАЛАРЫ - Үстінде */}
-      {wedo.status === "Connected" && (
-        <div className="flex gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-400 rounded-lg">
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
-              🔬 ПРОТОКОЛ ТАБУ (Console ашыңыз: F12)
-            </p>
-            <p className="text-xs text-orange-700 dark:text-orange-300">
-              Моторды бақылаңыз - қайсы команда жұмыс істейді?
-            </p>
-          </div>
-          <Button
-            onClick={scanDeviceInfo}
-            variant="outline"
-            size="sm"
-            className="border-blue-500 text-blue-600 bg-white"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            🔍 Сканерлеу
-          </Button>
-          <Button
-            onClick={testMotorProtocols}
-            variant="outline"
-            size="sm"
-            className="border-orange-500 text-orange-600 bg-white"
-          >
-            <TestTube className="w-4 h-4 mr-2" />
-            🧪 15 Тест
-          </Button>
-          <Button
-            onClick={testBothChars}
-            variant="outline"
-            size="sm"
-            className="border-purple-500 text-purple-600 bg-white font-bold"
-          >
-            🔄 2 Порт Тест
-          </Button>
-        </div>
-      )}
-
       {/* Ескерту - қосылмаған */}
       {wedo.status !== "Connected" && (
         <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded">
           ⚠️ WeDo қосылмаған! Оң жақтағы "Қосылу" батырмасын басыңыз.
-        </div>
-      )}
-
-      {/* Custom Hex команда панелі */}
-      {wedo.status === "Connected" && showDiagnostics && (
-        <div className="border border-purple-300 dark:border-purple-700 rounded-lg p-3 bg-purple-50 dark:bg-purple-950/20">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-              📝 Custom Hex Команда
-            </h3>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowDiagnostics(!showDiagnostics)}
-            >
-              Жасыру ▲
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Hex команда: 08 00 81 00 11 51 00 3f"
-              value={hexInput}
-              onChange={(e) => setHexInput(e.target.value)}
-              className="font-mono text-sm"
-            />
-            <Button
-              onClick={sendCustomCommand}
-              size="sm"
-              className="bg-purple-600 text-white"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Жіберу
-            </Button>
-          </div>
         </div>
       )}
 

@@ -193,15 +193,16 @@ export const useWeDo = (): WeDoHook => {
     }
 
     // Китайский клон WeDo 2.0 протокол: 02 01 01 XX
-    // XX = signed byte: положительное = вперед, отрицательное = назад
+    // XX = прямое значение скорости: 1-100 (0x01-0x64)
+    // Отрицательные: -1 до -100 -> 255 до 156 (0xFF-0x9C)
     let speedByte: number;
     if (s > 0) {
-      // Вперед: 1-100 -> 0x01-0x7F (1-127)
-      speedByte = Math.round((s / 100) * 126) + 1;
+      // Вперед: 1-100 -> 0x01-0x64 (прямое значение)
+      speedByte = s;
     } else {
-      // Назад: -1 до -100 -> 0xFF-0x80 (-1 до -128)
-      speedByte = Math.round((s / 100) * 127);
-      if (speedByte > 0) speedByte = 256 + speedByte; // Конвертация в unsigned
+      // Назад: -1 до -100 -> 0xFF-0x9C (255 до 156)
+      // Формула: 256 + s (где s отрицательное)
+      speedByte = 256 + s;
     }
 
     const command = new Uint8Array([0x02, 0x01, 0x01, speedByte & 0xff]);
@@ -230,12 +231,14 @@ export const useWeDo = (): WeDoHook => {
     }
 
     // Китайский клон WeDo 2.0 протокол: 02 02 01 XX
+    // XX = прямое значение скорости: 1-100 (0x01-0x64)
     let speedByte: number;
     if (s > 0) {
-      speedByte = Math.round((s / 100) * 126) + 1;
+      // Вперед: 1-100 -> 0x01-0x64 (прямое значение)
+      speedByte = s;
     } else {
-      speedByte = Math.round((s / 100) * 127);
-      if (speedByte > 0) speedByte = 256 + speedByte;
+      // Назад: -1 до -100 -> 0xFF-0x9C (255 до 156)
+      speedByte = 256 + s;
     }
 
     const command = new Uint8Array([0x02, 0x02, 0x01, speedByte & 0xff]);

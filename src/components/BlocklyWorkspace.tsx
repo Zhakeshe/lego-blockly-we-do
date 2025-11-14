@@ -98,6 +98,36 @@ const defineBlocks = () => {
     },
   };
 
+  // ⏱️ Мотор A уақытқа
+  Blockly.Blocks["wedo_motor_a_timed"] = {
+    init() {
+      this.appendDummyInput()
+        .appendField("🚗 Мотор A жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED")
+        .appendField("уақыт")
+        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "SECONDS")
+        .appendField("сек");
+      this.setPreviousStatement(true);
+      this.setNextStatement(true);
+      this.setColour(160);
+    },
+  };
+
+  // ⏱️ Мотор B уақытқа
+  Blockly.Blocks["wedo_motor_b_timed"] = {
+    init() {
+      this.appendDummyInput()
+        .appendField("🚗 Мотор B жылдамдық")
+        .appendField(new Blockly.FieldNumber(100, -100, 100), "SPEED")
+        .appendField("уақыт")
+        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "SECONDS")
+        .appendField("сек");
+      this.setPreviousStatement(true);
+      this.setNextStatement(true);
+      this.setColour(160);
+    },
+  };
+
   // ⏹️ Моторды тоқтату
   Blockly.Blocks["wedo_motor_stop"] = {
     init() {
@@ -161,6 +191,26 @@ await wedo.setMotorA(${speed});\n`;
 await wedo.setMotorB(${speed});\n`;
   };
 
+  javascriptGenerator.forBlock["wedo_motor_a_timed"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    const seconds = block.getFieldValue("SECONDS");
+    return `set3DMotor(${speed});
+await wedo.setMotorA(${speed});
+await new Promise(r => setTimeout(r, ${seconds * 1000}));
+set3DMotor(0);
+await wedo.stopMotor();\n`;
+  };
+
+  javascriptGenerator.forBlock["wedo_motor_b_timed"] = (block) => {
+    const speed = block.getFieldValue("SPEED");
+    const seconds = block.getFieldValue("SECONDS");
+    return `set3DMotor(${speed});
+await wedo.setMotorB(${speed});
+await new Promise(r => setTimeout(r, ${seconds * 1000}));
+set3DMotor(0);
+await wedo.stopMotor();\n`;
+  };
+
   javascriptGenerator.forBlock["wedo_motor_stop"] = () => {
     return `set3DMotor(0);
 await wedo.stopMotor();\n`;
@@ -219,6 +269,8 @@ export const BlocklyWorkspace = ({ wedo, on3DMotorChange, on3DLedChange }: Block
         <category name="🚗 Моторлар" colour="120">
           <block type="wedo_motor_a"></block>
           <block type="wedo_motor_b"></block>
+          <block type="wedo_motor_a_timed"></block>
+          <block type="wedo_motor_b_timed"></block>
           <block type="wedo_motor_stop"></block>
         </category>
 
